@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Biological Age Report</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="page cover-page">
+      <h1>Biological Age Report</h1>
+      <p><strong>Prepared for:</strong> {{ client.prepared_for }}</p>
+      <p><strong>Date:</strong> {{ client.date }}</p>
+      <p><strong>Client ID:</strong> {{ client.client_id }}</p>
+      <p><strong>Security Key:</strong> {{ client.security_key }}</p>
+      <p><strong>Consultant ID:</strong> {{ client.consultant_id }}</p>
+    </section>
+
+    {% include "toc.html" %}
+
+    <section class="page intro-page">
+      <h2>Introduction</h2>
+      <p>Client demographics placeholder: age, sex, measurement date, and context.</p>
+      <div class="disclaimer">
+        <strong>Disclaimer:</strong>
+        This report is an educational wellness estimation tool only. It is not a diagnosis,
+        not medical advice, and not a treatment plan.
+      </div>
+    </section>
+
+    <section class="page">
+      <h2>Biological Age</h2>
+      <h3>Your Biological Age result</h3>
+      <img src="{{ charts.bio_age }}" alt="Biological Age horizontal bar chart" />
+      <p>Placeholder explanation for biological age comparison.</p>
+    </section>
+
+    <section class="page">
+      <h2>Arterial Stiffness</h2>
+      <h3>Your Arterial Stiffness result</h3>
+      <img src="{{ charts.arterial_stiffness }}" alt="Arterial Stiffness vertical gauge" />
+      <p>Placeholder explanation for arterial stiffness interpretation.</p>
+    </section>
+
+    <section class="page">
+      <h2>BMI</h2>
+      <h3>Your BMI result</h3>
+      <img src="{{ charts.bmi }}" alt="BMI vertical gauge" />
+      <p>Placeholder explanation for BMI context and limitations.</p>
+      <h4>Recommendations (stub)</h4>
+      <ul>
+        <li>Placeholder recommendation 1.</li>
+        <li>Placeholder recommendation 2.</li>
+      </ul>
+    </section>
+
+    <section class="page">
+      <h2>Blood Pressure</h2>
+      <h3>Your Blood Pressure result</h3>
+      <div class="dual-chart">
+        <img src="{{ charts.bp_sbp }}" alt="Systolic blood pressure gauge" />
+        <img src="{{ charts.bp_dbp }}" alt="Diastolic blood pressure gauge" />
+      </div>
+      <p>Placeholder explanation for blood pressure ranges.</p>
+      <h4>Recommendations (stub)</h4>
+      <ul>
+        <li>Placeholder BP recommendation 1.</li>
+        <li>Placeholder BP recommendation 2.</li>
+      </ul>
+    </section>
+
+    <section class="page appendix">
+      <h2>Appendices</h2>
+      <h3>Arterial Stiffness Explained</h3>
+      <p>Explained page stub with educational context.</p>
+
+      <h3>Blood Pressure Explained</h3>
+      <img src="{{ charts.bp_sbp }}" alt="Blood pressure explained chart placeholder" />
+      <p>Educational explanation chart stub.</p>
+
+      <h3>Lifestyle Notes</h3>
+      <ul>
+        <li>Nutrition note (placeholder).</li>
+        <li>Activity note (placeholder).</li>
+        <li>Sleep note (placeholder).</li>
+      </ul>
+
+      <h3>Nitric Oxide</h3>
+      <ul>
+        <li>Placeholder nitric oxide educational bullet.</li>
+      </ul>
+
+      <h3>Further Testing</h3>
+      <ul>
+        <li>Placeholder follow-up testing recommendation.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Disclaimer: Educational wellness estimation only. Not a diagnosis, medical advice, or treatment plan.
+    </footer>
+  </body>
+</html>
