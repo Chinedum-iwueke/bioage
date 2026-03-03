@@ -30,6 +30,7 @@ def test_demo_run_writes_expected_files(tmp_path: Path) -> None:
     assert (outdir / "report.html").exists()
     assert (outdir / "result.json").exists()
     assert (outdir / "styles.css").exists()
+    assert (outdir / "inputs_normalized.json").exists()
 
     expected_charts = [
         "bio_age_bar.png",
