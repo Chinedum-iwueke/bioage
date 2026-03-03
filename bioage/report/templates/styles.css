@@ -1,0 +1,40 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  color: #1f2937;
+}
+
+.page {
+  padding: 32px;
+  border-bottom: 1px solid #d1d5db;
+  page-break-after: always;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 12px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e5e7eb;
+  margin: 8px 0;
+}
+
+.dual-chart {
+  display: flex;
+  gap: 12px;
+}
+
+.disclaimer {
+  margin-top: 12px;
+  padding: 12px;
+  border-left: 4px solid #b91c1c;
+  background: #fef2f2;
+}
+
+footer {
+  padding: 16px 32px;
+  font-size: 12px;
+  background: #f9fafb;
+}
