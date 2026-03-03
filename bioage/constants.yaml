@@ -1,0 +1,167 @@
+version: 1
+units:
+  blood_pressure: mmHg
+  waist_circumference: cm
+  bmi: kg/m2
+  physical_activity: minutes_per_week
+  sleep_duration: hours_per_night
+
+# Bin scores are relative risk points; higher points indicate higher expected age acceleration.
+thresholds:
+  blood_pressure:
+    systolic:
+      normal:
+        range: "<120"
+        score: 0
+      elevated:
+        range: "120-129"
+        score: 8
+      stage_1_hypertension:
+        range: "130-139"
+        score: 18
+      stage_2_hypertension:
+        range: "140-179"
+        score: 32
+      hypertensive_crisis:
+        range: ">=180"
+        score: 45
+    diastolic:
+      normal:
+        range: "<80"
+        score: 0
+      stage_1_hypertension:
+        range: "80-89"
+        score: 16
+      stage_2_hypertension:
+        range: "90-119"
+        score: 30
+      hypertensive_crisis:
+        range: ">=120"
+        score: 45
+
+  bmi:
+    underweight:
+      range: "<18.5"
+      score: 10
+    normal:
+      range: "18.5-24.9"
+      score: 0
+    overweight:
+      range: "25.0-29.9"
+      score: 10
+    obesity_class_1:
+      range: "30.0-34.9"
+      score: 20
+    obesity_class_2:
+      range: "35.0-39.9"
+      score: 30
+    obesity_class_3:
+      range: ">=40.0"
+      score: 40
+
+  waist_circumference:
+    male:
+      low_risk:
+        range: "<90"
+        score: 0
+      increased_risk:
+        range: "90-99"
+        score: 12
+      high_risk:
+        range: "100-109"
+        score: 22
+      very_high_risk:
+        range: ">=110"
+        score: 34
+    female:
+      low_risk:
+        range: "<80"
+        score: 0
+      increased_risk:
+        range: "80-87"
+        score: 12
+      high_risk:
+        range: "88-94"
+        score: 24
+      very_high_risk:
+        range: ">=95"
+        score: 38
+
+  smoking:
+    never:
+      score: 0
+    former_12m_plus:
+      score: 10
+    occasional:
+      score: 22
+    daily:
+      score: 38
+
+  sleep_duration:
+    optimal:
+      range: "7-8"
+      score: 0
+    short_or_long_mild:
+      range: "6 or 9"
+      score: 8
+    short_or_long_moderate:
+      range: "5 or 10"
+      score: 16
+    very_short_or_very_long:
+      range: "<5 or >10"
+      score: 26
+
+  physical_activity:
+    guideline_meeting:
+      range: ">=150"
+      score: 0
+    insufficient:
+      range: "75-149"
+      score: 10
+    low:
+      range: "1-74"
+      score: 20
+    none:
+      range: "0"
+      score: 30
+
+  alcohol:
+    none_or_low_risk:
+      score: 0
+    moderate_high:
+      score: 10
+    heavy:
+      score: 20
+
+weights:
+  systems:
+    cardiovascular: 0.36
+    metabolic: 0.30
+    lifestyle: 0.24
+    recovery: 0.10
+
+  # Relative weights within each system (sum to 1.0 per system).
+  cardiovascular_components:
+    systolic_bp: 0.52
+    diastolic_bp: 0.33
+    smoking: 0.15
+
+  metabolic_components:
+    bmi: 0.45
+    waist_circumference: 0.55
+
+  lifestyle_components:
+    smoking: 0.50
+    physical_activity: 0.30
+    alcohol: 0.20
+
+  recovery_components:
+    sleep_duration: 1.0
+
+age_delta:
+  slope_years_per_risk_point: 0.25
+  min_years: -8
+  max_years: 15
+  interpretation:
+    low_risk_bonus_threshold: 20
+    high_risk_threshold: 70
