@@ -39,6 +39,20 @@ thresholds:
         range: ">=120"
         score: 45
 
+  pwv:
+    optimal:
+      range: "<7.0"
+      score: 0
+    mildly_elevated:
+      range: "7.0-8.9"
+      score: 12
+    elevated:
+      range: "9.0-10.9"
+      score: 24
+    high:
+      range: ">=11.0"
+      score: 38
+
   bmi:
     underweight:
       range: "<18.5"
@@ -90,11 +104,9 @@ thresholds:
   smoking:
     never:
       score: 0
-    former_12m_plus:
+    former:
       score: 10
-    occasional:
-      score: 22
-    daily:
+    current:
       score: 38
 
   sleep_duration:
@@ -111,27 +123,51 @@ thresholds:
       range: "<5 or >10"
       score: 26
 
-  physical_activity:
-    guideline_meeting:
-      range: ">=150"
+  sleep_quality:
+    poor:
+      score: 28
+    fair:
+      score: 15
+    good:
+      score: 6
+    excellent:
       score: 0
-    insufficient:
-      range: "75-149"
+
+  sleep_consistency:
+    irregular:
+      score: 24
+    somewhat_regular:
       score: 10
-    low:
-      range: "1-74"
-      score: 20
-    none:
-      range: "0"
-      score: 30
+    regular:
+      score: 0
 
   alcohol:
-    none_or_low_risk:
+    none:
       score: 0
-    moderate_high:
+    light:
+      score: 4
+    moderate:
       score: 10
     heavy:
       score: 20
+
+  drug_use:
+    none:
+      score: 0
+    occasional:
+      score: 12
+    regular:
+      score: 28
+
+  caffeine_use:
+    none:
+      score: 2
+    low:
+      score: 0
+    moderate:
+      score: 6
+    high:
+      score: 14
 
 weights:
   systems:
@@ -151,12 +187,15 @@ weights:
     waist_circumference: 0.55
 
   lifestyle_components:
-    smoking: 0.50
-    physical_activity: 0.30
-    alcohol: 0.20
+    smoking: 0.45
+    alcohol: 0.25
+    drug_use: 0.20
+    caffeine_use: 0.10
 
-  recovery_components:
-    sleep_duration: 1.0
+  sleep_components:
+    duration: 0.50
+    quality: 0.30
+    consistency: 0.20
 
 age_delta:
   slope_years_per_risk_point: 0.25
