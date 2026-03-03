@@ -19,7 +19,8 @@ python -m bioage demo --outdir outputs/demo_run/
 
 ## Notes
 
-- This project currently generates placeholder charts, report HTML, and result JSON.
+- Scoring is deterministic and config-driven: score thresholds, bins, and weights are loaded from `bioage/constants.yaml`.
+- The demo command writes `scores.json` with per-metric risk scores and missing-data notes.
 - Educational use only: output includes disclaimers and is not a diagnosis or medical advice.
 - `constants.yaml` and research basis will be added in Task 1.5.
 
@@ -35,3 +36,9 @@ python -m bioage demo --outdir outputs/demo_run/
 
 The normalizer computes BMI from height+weight when available, checks sanity ranges, and adds deterministic warnings for suspicious inputs (for example likely unit mismatches or missing optional PWV). It does **not** apply scoring logic or clinical risk thresholds.
 
+
+## Adjusting scoring constants safely
+
+1. Edit `bioage/constants.yaml` (do not hardcode thresholds in Python).
+2. Run `pytest -q` to validate boundary behavior against the updated config.
+3. Re-run `python -m bioage demo --outdir outputs/demo_run/` to regenerate normalized inputs and scores.
