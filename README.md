@@ -22,6 +22,8 @@ python -m bioage demo --outdir outputs/demo_run/
 - Scoring is deterministic and config-driven: score thresholds, bins, and weights are loaded from `bioage/constants.yaml`.
 - The demo command writes `scores.json` with per-metric risk scores and missing-data notes.
 - Educational use only: output includes disclaimers and is not a diagnosis or medical advice.
+- Explanations are deterministic and derived from constants.yaml tables (drivers, recommendations, and domain interpretations).
+- Counterfactuals are educational simulations, not medical predictions.
 - `constants.yaml` and research basis will be added in Task 1.5.
 
 ## Inputs & Units
