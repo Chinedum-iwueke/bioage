@@ -20,7 +20,7 @@ from bioage.scoring import score_request
 
 
 def _json_dump(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False), encoding="utf-8")
 
 
 def _hash_bytes(data: bytes) -> str:
@@ -38,29 +38,14 @@ def run_pipeline(
     outdir.mkdir(parents=True, exist_ok=True)
 
     constants_file = (constants_path or DEFAULT_CONSTANTS_PATH).expanduser().resolve()
-    constants = load_constants(constants_file)
-
-    req: BioAgeRequest = normalize_request(raw_input)
-    scores = score_request(req, constants)
-    result = run_model(req, constants)
-    explanations = build_explanation_bundle(req, result, constants)
-
-    _json_dump(outdir / "inputs_raw.json", raw_input)
-    _json_dump(outdir / "inputs_normalized.json", req.to_dict())
-    _json_dump(outdir / "scores.json", scores)
-    _json_dump(outdir / "result.json", result)
-    _json_dump(outdir / "explanations.json", explanations)
-
-    report_bundle = render_report_bundle(outdir, req, result, explanations, constants)
-    if pdf:
-        raise NotImplementedError("--pdf requested but PDF backend is not configured. Recommended: WeasyPrint.")
-
-    raw_json_stable = json.dumps(raw_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    run_id = outdir.name
+    created_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     run_meta = {
-        "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "model_version": result.get("model_version"),
-        "constants_hash": _hash_bytes(constants_file.read_bytes()),
-        "input_hash": _hash_bytes(raw_json_stable),
+        "run_id": run_id,
+        "created_at": created_at,
+        "constants_hash": None,
+        "model_version": None,
+        "input_hash": None,
         "command_line": command_line or [],
         "environment": {
             "python": platform.python_version(),
@@ -69,6 +54,35 @@ def run_pipeline(
             "executable": sys.executable,
         },
     }
+    _json_dump(outdir / "run_meta.json", run_meta)
+    _json_dump(outdir / "inputs_raw.json", raw_input)
+
+    constants = load_constants(constants_file)
+    run_meta["constants_hash"] = _hash_bytes(constants_file.read_bytes())
+    _json_dump(outdir / "run_meta.json", run_meta)
+
+    req: BioAgeRequest = normalize_request(raw_input)
+    _json_dump(outdir / "inputs_normalized.json", req.to_dict())
+
+    scores = score_request(req, constants)
+    result = run_model(req, constants)
+    explanations = build_explanation_bundle(req, result, constants)
+
+    _json_dump(outdir / "scores.json", scores)
+    _json_dump(outdir / "result.json", result)
+    _json_dump(outdir / "explanations.json", explanations)
+
+    report_bundle = render_report_bundle(outdir, req, result, explanations, constants)
+    if pdf:
+        raise NotImplementedError("--pdf requested but PDF backend is not configured. Recommended: WeasyPrint.")
+
+    raw_json_stable = json.dumps(raw_input, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    run_meta.update(
+        {
+            "model_version": result.get("model_version"),
+            "input_hash": _hash_bytes(raw_json_stable),
+        }
+    )
     _json_dump(outdir / "run_meta.json", run_meta)
 
     return {

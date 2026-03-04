@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -71,6 +72,17 @@ def _new_run_folder() -> tuple[str, Path]:
         suffix += 1
     candidate.mkdir(parents=True, exist_ok=False)
     return candidate.name, candidate
+
+
+@app.exception_handler(RequestValidationError)
+def handle_request_validation_error(request: Request, exc: RequestValidationError) -> HTMLResponse:
+    message = "Some required fields were missing or invalid. Please review lifestyle and sleep selections."
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {"message": message, "disclaimer": _disclaimer_text()},
+        status_code=400,
+    )
 
 
 @app.get("/", response_class=HTMLResponse)

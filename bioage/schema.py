@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from bioage.guards import GuardFlag, add_flag, flags_to_json, merge_flags, unit_and_input_flags, warning_messages
+
 
 class SchemaValidationError(ValueError):
     """Raised when an input payload fails schema validation."""
@@ -104,9 +106,12 @@ class BioAgeRequest:
     submitted_at: str | None = None
     model_version: str | None = None
     warnings: list[str] = field(default_factory=list)
+    guard_flags: list[GuardFlag] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        data["guard_flags"] = flags_to_json(self.guard_flags)
+        return data
 
 
 @dataclass
@@ -182,7 +187,7 @@ def _computed_bmi(height_cm: float, weight_kg: float) -> float:
 
 def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     payload = _require_dict(raw, "request")
-    warnings: list[str] = []
+    guard_flags: list[GuardFlag] = []
 
     demographics_raw = _require_dict(payload.get("demographics"), "demographics")
     vitals_raw = _require_dict(payload.get("vitals"), "vitals")
@@ -214,7 +219,7 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     if waist_raw is None:
         raise SchemaValidationError("anthropometrics.waist_cm is required")
     waist = _parse_float(waist_raw, "anthropometrics.waist_cm")
-    _check_range(waist, "anthropometrics.waist_cm", 40, 200)
+    _check_range(waist, "anthropometrics.waist_cm", 20, 200)
 
     height = _parse_float(height_raw, "anthropometrics.height_cm") if height_raw is not None else None
     weight = _parse_float(weight_raw, "anthropometrics.weight_kg") if weight_raw is not None else None
@@ -226,16 +231,22 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
         raise SchemaValidationError("Provide either anthropometrics.bmi or both height_cm and weight_kg")
 
     if height is not None:
-        _check_range(height, "anthropometrics.height_cm", 120, 230)
+        _check_range(height, "anthropometrics.height_cm", 90, 260)
     if weight is not None:
-        _check_range(weight, "anthropometrics.weight_kg", 30, 250)
+        _check_range(weight, "anthropometrics.weight_kg", 20, 250)
     if bmi is not None:
         _check_range(bmi, "anthropometrics.bmi", 12, 70)
 
     if height is not None and weight is not None:
         computed = round(_computed_bmi(height, weight), 2)
         if bmi is not None and abs(bmi - computed) > 2.0:
-            warnings.append("BMI mismatch; using BMI computed from height/weight.")
+            add_flag(
+                guard_flags,
+                "BMI_MISMATCH_COMPUTED",
+                "warning",
+                "BMI mismatch; using BMI computed from height/weight.",
+                "anthropometrics.bmi",
+            )
         bmi = computed
 
     anthropometrics = AnthropometricsInput(height_cm=height, weight_kg=weight, bmi=bmi, waist_cm=waist)
@@ -258,29 +269,43 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     )
 
     if pwv_parsed is None:
-        warnings.append("PWV missing; vascular stiffness signal unavailable.")
+        add_flag(
+            guard_flags,
+            "MISSING_PWV",
+            "info",
+            "PWV missing; vascular stiffness signal unavailable.",
+            "vitals.pwv_m_per_s",
+        )
     if age <= 12 or age >= 100:
-        warnings.append("Age near boundary; confirm years entered correctly.")
-    if sbp <= 80 or sbp >= 220:
-        warnings.append("SBP near limit; confirm mmHg value.")
-    if dbp <= 50 or dbp >= 130:
-        warnings.append("DBP near limit; confirm mmHg value.")
-    if pwv_parsed is not None and (pwv_parsed <= 4.0 or pwv_parsed >= 20.0):
-        warnings.append("PWV near limit; confirm m/s value.")
-    if height is not None and height <= 130:
-        warnings.append("Height is low; confirm unit is cm, not inches.")
-    if weight is not None and weight < 35:
-        warnings.append("Weight seems low; confirm unit is kg, not lb.")
-    if weight is not None and weight > 200:
-        warnings.append("Weight seems high; confirm unit is kg.")
+        add_flag(
+            guard_flags,
+            "AGE_BOUNDARY_CHECK",
+            "info",
+            "Age near boundary; confirm years entered correctly.",
+            "demographics.chronological_age_years",
+        )
     if bmi is not None and (bmi <= 14 or bmi >= 55):
-        warnings.append("BMI near limit; confirm height and weight values.")
-    if waist < 55 and age >= 18:
-        warnings.append("Waist seems low; confirm unit is cm, not inches.")
-    if waist > 170:
-        warnings.append("Waist seems high; confirm cm value.")
-    if sleep_hours < 4 or sleep_hours > 12:
-        warnings.append("Sleep hours unusual; confirm average hours/night.")
+        add_flag(
+            guard_flags,
+            "BMI_NEAR_LIMIT",
+            "info",
+            "BMI near limit; confirm height and weight values.",
+            "anthropometrics.bmi",
+        )
+
+    guard_flags = merge_flags(
+        guard_flags,
+        unit_and_input_flags(
+            age=age,
+            waist_cm=waist,
+            height_cm=height,
+            weight_kg=weight,
+            sbp_mmHg=sbp,
+            dbp_mmHg=dbp,
+            sleep_hours=sleep_hours,
+            pwv_m_per_s=pwv_parsed,
+        ),
+    )
 
     submitted_at = payload.get("submitted_at") or datetime.now(timezone.utc).isoformat()
     if not isinstance(submitted_at, str):
@@ -297,6 +322,8 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     if model_version is not None and not isinstance(model_version, str):
         raise SchemaValidationError("model_version must be a string")
 
+    warnings = warning_messages(guard_flags)
+
     return BioAgeRequest(
         demographics=demographics,
         vitals=vitals,
@@ -308,4 +335,5 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
         submitted_at=submitted_at,
         model_version=model_version,
         warnings=warnings,
+        guard_flags=guard_flags,
     )

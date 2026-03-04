@@ -1,6 +1,6 @@
 <section class="page">
   <h2>Arterial Stiffness</h2>
   <p><strong>PWV:</strong> {% if vitals.pwv is none %}Not provided{% else %}{{ vitals.pwv }} m/s ({{ vitals.pwv_label }}){% endif %}</p>
-  <img src="{{ charts.arterial_stiffness }}" alt="Arterial stiffness gauge" />
+  {% if charts.arterial_stiffness %}<img src="{{ charts.arterial_stiffness }}" alt="Arterial stiffness gauge" />{% else %}<p class="callout">N/A</p>{% endif %}
   {% if vitals.pwv is none %}<p class="callout">PWV was not provided, so vascular stiffness interpretation is limited.</p>{% endif %}
 </section>
