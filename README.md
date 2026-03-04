@@ -61,6 +61,21 @@ If `bioage run` is given an existing directory (for example `outputs/`), it crea
 }
 ```
 
+
+## Guardrails & Warnings
+
+- Input normalization emits structured guard flags (`guard_flags`) with `code`, `severity`, `message`, and optional `field` path.
+- Unit sanity checks are warning-only heuristics (for example cm vs inches, kg vs lbs) and are **not** used in scoring math.
+- PWV is optional end-to-end:
+  - scoring keeps PWV score as `null`
+  - model reports `pwv` under `missing_metrics`
+  - report/web shows arterial stiffness as "Not provided"/"N/A" rather than a misleading gauge marker.
+- Safety constraints are enforced in outputs:
+  - `total_risk` is clamped to `[0, 100]`
+  - `age_delta_years` is capped by constants (`model.age_delta.caps`)
+  - `biological_age_years` is clamped to `>= 0`
+- Disclaimers are always shown in web and report outputs, and language is educational/risk-association oriented.
+
 ## Output artifact layout
 
 Each successful run writes:

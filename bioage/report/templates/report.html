@@ -26,6 +26,13 @@
     {% include "_section_stiffness.html" %}
     {% include "_section_bmi.html" %}
     {% include "_section_bp.html" %}
+
+    {% if warnings %}
+    <section class="page">
+      <h2>Warnings</h2>
+      <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
     {% include "_appendix_explained.html" %}
     {% include "_appendix_lifestyle.html" %}
 

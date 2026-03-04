@@ -265,7 +265,7 @@ recommendations:
     stage_2_hypertension:
       tips: ["Prioritize blood pressure improvement with prompt professional follow-up.", "Use daily routines for nutrition quality, activity, and medication adherence if prescribed."]
     hypertensive_crisis:
-      tips: ["Seek urgent clinical guidance for very high blood pressure readings.", "Do not rely on this educational tool for immediate medical decisions."]
+      tips: ["Very high blood pressure is associated with higher risk; repeat the measurement and discuss next steps with a qualified professional.", "This report is educational and should be used alongside professional guidance."]
   waist:
     low_risk:
       tips: ["Maintain current waist-management habits through sustainable nutrition and activity."]

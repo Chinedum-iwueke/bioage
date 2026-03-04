@@ -6,6 +6,7 @@ from typing import Any
 
 from bioage import __version__
 from bioage.constants_loader import load_constants
+from bioage.guards import flags_to_json
 from bioage.schema import BioAgeRequest
 from bioage.scoring import score_request
 
@@ -148,7 +149,7 @@ def risk_to_age_delta(total_risk: float, constants: dict[str, Any]) -> dict[str,
 
 
 def compute_biological_age(chronological_age_years: int, age_delta_years: float) -> float:
-    return float(chronological_age_years) + float(age_delta_years)
+    return max(0.0, float(chronological_age_years) + float(age_delta_years))
 
 
 def run_model(req: BioAgeRequest, constants: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -187,4 +188,5 @@ def run_model(req: BioAgeRequest, constants: dict[str, Any] | None = None) -> di
         "biological_age_years": biological_age,
         "missing_metrics": missing_metrics,
         "warnings": list(req.warnings),
+        "guard_flags": flags_to_json(req.guard_flags),
     }
