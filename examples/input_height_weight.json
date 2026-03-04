@@ -1,0 +1,12 @@
+{
+  "demographics": {"chronological_age_years": 39, "sex": "male"},
+  "vitals": {"sbp_mmHg": 122, "dbp_mmHg": 79},
+  "anthropometrics": {"height_cm": 178, "weight_kg": 80, "waist_cm": 91},
+  "lifestyle": {
+    "smoking_status": "never",
+    "alcohol_use": "light",
+    "drug_use": "none",
+    "caffeine_use": "low"
+  },
+  "sleep": {"sleep_hours": 7.2, "sleep_quality": "good", "sleep_consistency": "regular"}
+}

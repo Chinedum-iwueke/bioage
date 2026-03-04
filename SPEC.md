@@ -1,405 +1,225 @@
-# SPEC.md — Single Source of Truth
-
-## 1. Purpose
-
-The Biological Age Calculator is defined as an **Educational Wellness Estimation Tool**.
-
-It is explicitly **not** a medical device, does not provide diagnosis, and must not be represented as clinical decision support.
-
-For this system, biological age is operationally defined as:
-
-> **“A relative physiological risk age derived from cardiometabolic and lifestyle markers.”**
-
-This specification is the contractual blueprint for model behavior, report generation, and deterministic output structure prior to research-aligned calibration.
-
----
-
-## 2. System Architecture Overview
-
-The model pipeline is:
-
-**Inputs → Validation → Metric Scores → System Subscores → Weighted Risk Score → Age Delta → Biological Age → Report → Recommendations**
-
-### 2.1 Pipeline intent
-
-- **Inputs:** Collect user-provided demographic, physiological, and behavioral data.
-- **Validation:** Enforce schema, units, and acceptable range checks.
-- **Metric Scores:** Convert each validated input into a normalized risk metric on a common scale.
-- **System Subscores:** Aggregate related metrics into system-level risk subscores.
-- **Weighted Risk Score:** Combine subscores using configurable system weights.
-- **Age Delta:** Transform total risk into age offset relative to chronological age.
-- **Biological Age:** Compute final estimate as chronological age adjusted by age delta.
-- **Report:** Render deterministic narrative + visual output in fixed section order.
-- **Recommendations:** Generate deterministic guidance from rule mappings.
-
-### 2.2 ASCII architecture diagram
-
-```text
-+--------+     +------------+     +--------------+     +----------------+
-| Inputs | --> | Validation | --> | Metric Scores| --> | System Scores  |
-+--------+     +------------+     +--------------+     +----------------+
-                                                          |
-                                                          v
-                                                   +----------------+
-                                                   | Weighted Total |
-                                                   |   Risk Score   |
-                                                   +----------------+
-                                                          |
-                                                          v
-                                                   +----------------+
-                                                   |   Age Delta    |
-                                                   +----------------+
-                                                          |
-                                                          v
-                                                   +----------------+
-                                                   | Biological Age |
-                                                   +----------------+
-                                                      /           \
-                                                     v             v
-                                             +--------------+ +------------------+
-                                             | Report Build | | Recommendations |
-                                             +--------------+ +------------------+
-```
-
----
-
-## 3. Input Variables (No Numbers Yet)
-
-All incoming values must be validated against schema-defined data types, units, and acceptable ranges using constants placeholders.
-
-### 3.1 Demographics
-
-- **chronological_age**
-  - Type: integer or decimal (schema-constrained)
-  - Unit: years
-  - Acceptable range: `AGE_MIN` to `AGE_MAX` in `constants.yaml`
-- **sex**
-  - Type: enumerated string
-  - Allowed values placeholder: `SEX_ALLOWED_VALUES`
-
-### 3.2 Cardiovascular
-
-- **sbp** (systolic blood pressure)
-  - Type: decimal
-  - Unit: mmHg
-  - Acceptable range placeholder: `SBP_MIN` to `SBP_MAX`
-- **dbp** (diastolic blood pressure)
-  - Type: decimal
-  - Unit: mmHg
-  - Acceptable range placeholder: `DBP_MIN` to `DBP_MAX`
-- **pwv** (pulse wave velocity, optional)
-  - Type: decimal or null
-  - Unit: m/s
-  - Acceptable range placeholder: `PWV_MIN` to `PWV_MAX`
-
-### 3.3 Metabolic
-
-- **height**
-  - Type: decimal
-  - Unit: cm (or normalized to canonical SI before scoring)
-  - Acceptable range placeholder: `HEIGHT_MIN` to `HEIGHT_MAX`
-- **weight**
-  - Type: decimal
-  - Unit: kg
-  - Acceptable range placeholder: `WEIGHT_MIN` to `WEIGHT_MAX`
-- **bmi** (derived)
-  - Derived from height and weight in canonical formula path
-  - Formula implementation location to be defined in code-level docs
-  - Validation placeholder for derived value: `BMI_MIN` to `BMI_MAX`
-- **waist_circumference**
-  - Type: decimal or null
-  - Unit: cm
-  - Acceptable range placeholder: `WAIST_MIN` to `WAIST_MAX`
-
-### 3.4 Lifestyle
-
-- **smoking_status**
-  - Type: categorical enum
-  - Allowed states placeholder: `SMOKING_CATEGORY_MAP`
-- **alcohol_use_frequency**
-  - Type: categorical enum
-  - Allowed states placeholder: `ALCOHOL_FREQUENCY_MAP`
-- **drug_use_frequency**
-  - Type: categorical enum
-  - Allowed states placeholder: `DRUG_FREQUENCY_MAP`
-- **caffeine_use**
-  - Type: categorical enum or bounded ordinal
-  - Allowed states placeholder: `CAFFEINE_USE_MAP`
+# Biological Age Calculator — System Specification (Current Implementation)
+
+## 1) Purpose and scope
+
+The Biological Age Calculator is an **educational wellness estimation system**. It transforms user-provided cardiometabolic and lifestyle inputs into:
+
+- metric-level risk scores
+- system subscores
+- composite risk (`total_risk`)
+- age delta (`age_delta_years`)
+- biological age estimate (`biological_age_years`)
+- explanation bundle with recommendations and counterfactuals
+- static report artifacts (HTML + chart images)
 
-### 3.5 Sleep
+It is not a diagnostic or treatment system.
 
-- **sleep_duration_avg**
-  - Type: decimal
-  - Unit: hours per night
-  - Acceptable range placeholder: `SLEEP_DURATION_MIN` to `SLEEP_DURATION_MAX`
-- **sleep_quality_self_rating**
-  - Type: ordinal categorical
-  - Scale placeholder: `SLEEP_QUALITY_SCALE`
-- **sleep_consistency**
-  - Type: categorical or bounded ordinal
-  - Scale placeholder: `SLEEP_CONSISTENCY_SCALE`
+## 2) Interfaces
+
+### 2.1 CLI
+
+Entry point: `python -m bioage`
+
+Commands:
+- `demo --outdir <path> [--constants <path>] [--assets <path>] [--pdf]`
+- `run --input <path.json> --outdir <path> [--constants <path>] [--assets <path>] [--pdf]`
 
----
+Behavior notes:
+- `run` creates a timestamped run folder when `--outdir` is an existing directory.
+- `--pdf` currently raises `NotImplementedError` (PDF backend intentionally not configured).
+
+### 2.2 Web UI (FastAPI)
 
-## 4. Scoring Framework (Structure Only)
+Base app: `app.main:app`
 
-Each metric is transformed into a normalized risk score on a **0–100** scale:
+Routes:
+- `GET /` input form
+- `POST /calculate` run pipeline from form data
+- `GET /runs/{run_id}/report` view rendered HTML report
+- `GET /runs/{run_id}/download/report.html`
+- `GET /runs/{run_id}/download/report.pdf` (404 unless PDF exists)
+- `GET /runs/{run_id}/charts` list run chart images
+- `GET /health`
 
-- `0` = optimal observed risk state in model definition
-- `100` = highest model-defined risk state
+Web configuration:
+- `BIOAGE_OUTPUT_DIR` (default `outputs/web`)
+- `BIOAGE_CONSTANTS_PATH` (constants override)
 
-No final thresholds are specified in this document.
+## 3) Input schema
 
-### 4.1 Required scoring constant placeholders
+Top-level required objects:
+- `demographics`
+- `vitals`
+- `anthropometrics`
+- `lifestyle`
+- `sleep`
 
-Examples of required placeholders (non-exhaustive):
+Optional top-level fields:
+- `client_metadata` (object)
+- `measurement_metadata` (object)
+- `submitted_at` (string)
+- `model_version` (string)
 
-- `BP_STAGE_NORMAL_SCORE = <to be defined in constants.yaml>`
-- `BP_STAGE_ELEVATED_SCORE = <to be defined in constants.yaml>`
-- `SBP_THRESHOLD_BANDS = <to be defined in constants.yaml>`
-- `DBP_THRESHOLD_BANDS = <to be defined in constants.yaml>`
-- `PWV_THRESHOLD_BANDS = <to be defined in constants.yaml>`
-- `BMI_THRESHOLD_BANDS = <to be defined in constants.yaml>`
-- `WAIST_THRESHOLD_BANDS = <to be defined in constants.yaml>`
-- `SMOKING_RISK_MAP = <to be defined in constants.yaml>`
-- `ALCOHOL_RISK_MAP = <to be defined in constants.yaml>`
-- `DRUG_RISK_MAP = <to be defined in constants.yaml>`
-- `CAFFEINE_RISK_MAP = <to be defined in constants.yaml>`
-- `SLEEP_DURATION_RISK_MAP = <to be defined in constants.yaml>`
-- `SLEEP_QUALITY_RISK_MAP = <to be defined in constants.yaml>`
-- `SLEEP_CONSISTENCY_RISK_MAP = <to be defined in constants.yaml>`
+### 3.1 Field definitions
 
-### 4.2 Deferred to Task 1.5
+- `demographics.chronological_age_years` integer, range `[10,120]`
+- `demographics.sex` enum: `male | female`
+- `vitals.sbp_mmHg` integer, range `[70,260]`
+- `vitals.dbp_mmHg` integer, range `[40,160]`
+- `vitals.pwv_m_per_s` optional float, range `[3.0,25.0]`
+- `anthropometrics.waist_cm` required float, range `[20,200]`
+- `anthropometrics.bmi` optional float, range `[12,70]`
+- `anthropometrics.height_cm` optional float, range `[90,260]`
+- `anthropometrics.weight_kg` optional float, range `[20,250]`
+- `lifestyle.smoking_status` enum: `never | former | current`
+- `lifestyle.alcohol_use` enum: `none | light | moderate | heavy`
+- `lifestyle.drug_use` enum: `none | occasional | regular`
+- `lifestyle.caffeine_use` enum: `none | low | moderate | high`
+- `sleep.sleep_hours` float, range `[0,16]`
+- `sleep.sleep_quality` enum: `poor | fair | good | excellent`
+- `sleep.sleep_consistency` enum: `irregular | somewhat_regular | regular`
 
-Task 1.5 will define and freeze:
+### 3.2 Derived BMI behavior
 
-- Threshold bands
-- Relative magnitudes of risk levels
-- System-level weights
-- Age delta conversion rules
+- User must provide either:
+  - `bmi`, or
+  - both `height_cm` and `weight_kg`.
+- If `height_cm`+`weight_kg` are provided, BMI is computed.
+- If computed BMI differs materially from provided BMI, a warning flag is emitted and computed BMI is used.
 
----
+## 4) Validation and warnings
 
-## 5. System Subscores
+Validation is strict for schema shape, enums, and numeric ranges. Warnings/guard flags are generated for non-fatal concerns.
 
-System subscores are grouped as follows.
+Guard flag format:
+- `code`
+- `severity` (`info` or `warning`)
+- `message`
+- optional `field`
 
-### 5.1 Cardiovascular system
+Examples:
+- missing optional PWV
+- BMI mismatch between provided and computed
+- near-boundary values
+- unit plausibility warnings
 
-Components:
-- Blood pressure composite (SBP/DBP-derived BP score)
-- PWV score (optional; excluded if missing)
+Warnings are persisted in `inputs_normalized.json` and propagated to `result.json`.
 
-### 5.2 Metabolic system
+## 5) Scoring method
 
-Components:
-- BMI score
-- Waist circumference score
+Scoring is config-driven by `bioage/constants.yaml` thresholds and weights.
 
-### 5.3 Lifestyle system
+### 5.1 Metric scores
 
-Components:
-- Smoking score
-- Alcohol score
-- Drug score
-- Caffeine score
+Primary metric scores are emitted in `scores.json` and mirrored in `result.json`:
+- `bp`
+- `pwv` (nullable)
+- `bmi`
+- `waist`
+- `sleep`
+- `lifestyle`
 
-### 5.4 Recovery system
+Each metric is transformed to a point score where higher is worse (0–100 style scale; exact bins from constants).
 
-Components:
-- Sleep composite score (derived from duration, quality, consistency)
+### 5.2 Subscores and missing-data handling
 
-### 5.5 Formula structure
+Configured subsystems (`model.subscores.systems`):
+- `cardio` (`bp`, `pwv`)
+- `metabolic` (`bmi`, `waist`)
+- `lifestyle` (`lifestyle`)
+- `recovery` (`sleep`)
 
-Base structure per system:
+Aggregation mode is mean (current implementation).
 
-```text
-SystemScore = average(component_scores)
-```
+If a component is missing (e.g., PWV), the subsystem mean is computed from available components only. Missing component keys are recorded in `missing_metrics`.
 
-Missing component handling:
-- Missing components are excluded from denominator.
-- If a component is unavailable, system score is computed from present components only.
-- If a full system has no usable components, system is marked unavailable and excluded from total-risk aggregation.
-- Remaining system weights are renormalized proportionally.
+### 5.3 Composite risk
 
----
+System subscores are combined by normalized configured weights (`model.total_risk.system_weights`).
 
-## 6. Composite Risk Score
+`total_risk` is clamped to `[0,100]`.
 
-Composite score structure:
+## 6) Risk-to-age mapping
 
-```text
-TotalRiskScore =
-  (Cardio * CARDIO_WEIGHT) +
-  (Metabolic * METABOLIC_WEIGHT) +
-  (Lifestyle * LIFESTYLE_WEIGHT) +
-  (Recovery * RECOVERY_WEIGHT)
-```
+Age delta mapping is linear and configuration-driven:
+- `pivot_risk`
+- `pivot_delta_years`
+- `slope_years_per_risk_point`
+- caps: `min_years`, `max_years`
 
-All weight constants are placeholders and will be defined in Task 1.5 in `constants.yaml`.
+Form:
+`age_delta_uncapped = pivot_delta + (total_risk - pivot_risk) * slope`
 
-Weight renormalization must occur when one or more systems are unavailable.
+`age_delta_years` is capped to configured min/max.
 
----
+`biological_age_years = max(0, chronological_age_years + age_delta_years)`.
 
-## 7. Age Delta Mapping
+## 7) Explanation bundle
 
-Age delta is defined as a deterministic transformation from total risk:
+`explanations.json` includes:
 
-```text
-AgeDelta = f(TotalRiskScore)
-```
+- `disclaimer_short`
+- `domain_summaries`
+- `drivers`
+  - metric-level contribution ranking
+  - system contribution ranking
+- `recommendations`
+  - rule-based tips per metric label
+  - prioritized action list
+- `counterfactuals`
+  - deterministic simulations for BP, waist, smoking, and sleep target improvements
+  - `estimated_years_recoverable`
 
-Required structure:
-- Linear mapping placeholder (e.g., slope/intercept representation)
-- Minimum age-delta cap placeholder
-- Maximum age-delta cap placeholder
+Counterfactual targets are read from constants and rescored through the same model pipeline.
 
-Required statement:
+## 8) Reporting
 
-> **“Age delta caps prevent unrealistic biological age swings.”**
+The report engine renders:
 
-All mapping constants are deferred to Task 1.5.
+- `report.html`
+- `charts/` PNG files
+  - biological vs chronological age bar chart
+  - arterial stiffness gauge (if PWV provided)
+  - BMI gauge
+  - SBP and DBP gauges
 
----
+Report sections include cover/title, disclaimer, table of contents, biological age summary, blood pressure section, BMI and stiffness sections, recommendations, and appendices from templates.
 
-## 8. Biological Age Calculation
+## 9) Run artifacts
 
-Final calculation structure:
+A successful run folder contains:
+- `run_meta.json`
+- `inputs_raw.json`
+- `inputs_normalized.json`
+- `scores.json`
+- `result.json`
+- `explanations.json`
+- `report.html`
+- `styles.css`
+- `charts/*.png`
+- optional `report.pdf` (not generated by current default implementation)
 
-```text
-BiologicalAge = ChronologicalAge + AgeDelta
-```
+`run_meta.json` captures provenance:
+- `run_id`
+- timestamps
+- `constants_hash`
+- `model_version`
+- `input_hash`
+- runtime environment details
 
-Output must preserve deterministic rounding/formatting behavior as defined in implementation standards.
+## 10) Determinism and reproducibility
 
----
+Determinism is enforced by:
+- fixed config-driven transforms
+- stable JSON serialization (`sort_keys=True`, fixed formatting)
+- explicit constants hashing
+- versioned model output fields
 
-## 9. Drivers & Recommendations Logic
+Given the same normalized input and constants file, scoring and model results are deterministic.
 
-### 9.1 Driver detection
+## 11) Future improvements
 
-The model must identify:
-- Top contributing system
-- Top contributing metric within that system
-
-Contribution logic must be deterministic and reproducible.
-
-### 9.2 Recommendation generation
-
-Recommendations are generated from a deterministic rule table:
-
-- `RECOMMENDATION_RULE_TABLE = <to be defined later>`
-- Mapping keys: risk drivers and severity tier placeholders
-- Mapping outputs: educational recommendation text blocks
-
-### 9.3 Counterfactual roadmap note
-
-Counterfactual simulation (example: “if BP normalized”) is explicitly out of scope for this stage and will be implemented in later tasks.
-
----
-
-## 10. Reporting Structure (Aligned With Guide PDF)
-
-Report output must mirror the guide ordering and presentation style represented by `assets/sample_report_guide.pdf` and the current report templates.
-
-### 10.1 Required section order
-
-1. Cover Page
-   - Client metadata
-   - Prepared for
-   - Date
-   - Consultant ID
-2. Table of Contents
-3. Introduction + Disclaimer
-4. Biological Age Summary
-5. Arterial Stiffness Section
-6. BMI Section
-7. Blood Pressure Section
-8. Appendices
-   - Arterial Stiffness Explained
-   - Blood Pressure Explained
-   - Lifestyle Notes
-   - Further Testing
-
-### 10.2 Disclaimer requirement
-
-**All reports must include visible disclaimer on Introduction page and footer.**
-
-### 10.3 Presentation consistency
-
-- Section headings must be stable and deterministic.
-- Narrative style must remain educational and non-diagnostic.
-- Charts/visuals may evolve, but section order and disclaimer placement are fixed.
-
----
-
-## 11. Missing Data Rules
-
-The model must not crash on partial inputs. Missing data must be handled deterministically and surfaced in report warnings.
-
-### 11.1 Missing PWV
-
-- Cardiovascular score falls back to BP-only subscore.
-- PWV-specific narrative replaced with “not provided” explanatory text.
-- Warning flag emitted.
-
-### 11.2 Missing waist circumference
-
-- Metabolic score falls back to BMI-only subscore.
-- Waist-related recommendation logic disabled.
-- Warning flag emitted.
-
-### 11.3 Missing sleep details
-
-- If one sleep component missing, compute recovery score from available sleep components.
-- If all sleep components missing, recovery system marked unavailable and excluded with weight renormalization.
-- Warning flag emitted.
-
-### 11.4 Partial lifestyle responses
-
-- Available lifestyle components still scored.
-- Missing lifestyle components excluded from lifestyle average.
-- If all lifestyle components missing, lifestyle system marked unavailable and excluded with weight renormalization.
-- Warning flag emitted.
-
-### 11.5 Warning propagation
-
-- Each missing-data event must produce structured warning codes in output payload.
-- Report must render a human-readable “Data completeness notes” block.
-
----
-
-## 12. Determinism & Versioning
-
-- All thresholds, risk maps, and weights are stored in `constants.yaml`.
-- Output must include a required model version string, e.g., `MODEL_VERSION`.
-- Given identical inputs and identical constants version, outputs must be identical.
-- Any constant changes require model version increment according to project release policy.
-
----
-
-## 13. Future Institutional Upgrade Notes
-
-This architecture is intentionally extensible for later institutional-grade evolution:
-
-- Transition from rule-based scoring to data-driven regression or hybrid models
-- Calibration against real cohort data
-- Confidence interval generation
-- Population shift/drift monitoring
-- Device standardization and protocol controls for PWV acquisition
-
-These upgrades must remain backward-compatible with report contract and deterministic baseline mode.
-
----
-
-## Open Design Decisions Requiring Confirmation
-
-The following implementation-level decisions remain intentionally open and should be confirmed during Task 1.5 or subsequent governance review:
-
-- Canonical input unit policy for height and potential dual-unit intake normalization.
-- Exact categorical vocabularies for lifestyle and sleep enum states.
-- Final rule precedence when both system-level and metric-level recommendations are triggered.
-- Output rounding precision policy for system scores, total risk score, age delta, and biological age.
-- Warning code namespace and schema shape for downstream API/report interoperability.
+- Optional PDF backend integration (e.g., WeasyPrint).
+- Stronger constants loader compatibility with full YAML features.
+- Authn/authz and hardened deployment posture for multi-user web operation.
+- Outcome-linked calibration and external validation studies.

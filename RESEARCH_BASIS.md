@@ -1,180 +1,135 @@
-# Research Basis for Biological Age Risk Thresholds and Weightings
+# Scientific Basis and Modeling Rationale
 
-This document explains the research-informed rationale for values in `bioage/constants.yaml`.
+## Scope and interpretation
 
-## Design principles
+This document explains the scientific rationale behind `bioage/constants.yaml` and the current scoring model. The implementation is **research-informed** and intended for educational wellness estimation. It is not clinically validated for diagnosis, prognosis, or treatment selection.
 
-1. **Public, non-proprietary evidence only**: thresholds and relative contributions are based on widely used clinical cut points and large cohort/meta-analytic patterns.
-2. **Relative, not absolute, calibration**: scores represent proportional risk contributions (hazard burden) rather than direct probabilities.
-3. **Monotonic risk scaling**: categories with stronger observed hazard ratios receive proportionally higher scores.
-4. **Domain weighting by attributable impact**: domains with larger and more consistent all-cause/CVD risk associations receive higher system weights.
+Terminology used here:
+- **risk score**: configuration-driven point score for a metric or subsystem
+- **educational estimate**: modeled biological age output for coaching-style interpretation
+- **associated with**: indicates observed population-level relationships, not deterministic individual outcomes
 
----
+## How constants are used
 
-## 1) Blood pressure thresholds and scores
+The model is deterministic and constants-driven. Threshold bins, score values, and weights are loaded from:
+- `thresholds.*`
+- `weights.*`
+- `model.*`
+- `copy.*`
+- `recommendations.*`
 
-**Configuration:** `thresholds.blood_pressure`.
-
-### Research rationale
-- Cutoffs follow widely accepted guideline categories (normal, elevated, stage 1, stage 2, crisis) from ACC/AHA-aligned practice frameworks.
-- Epidemiology consistently shows a graded rise in cardiovascular and all-cause mortality above ~120/80 mmHg, with materially higher risk once in stage 2 ranges.
-- Therefore, score increments are small from normal → elevated, moderate at stage 1, and steep for stage 2/crisis.
-
-### Score mapping logic
-- SBP: `0 → 8 → 18 → 32 → 45`
-- DBP: `0 → 16 → 30 → 45`
-
-This ratio reflects that moving from elevated to stage 2 is not a linear worsening; mortality/CVD risk rises more steeply at higher BP strata.
+These values encode prior assumptions about directionality and relative influence.
 
 ---
 
-## 2) BMI thresholds and scores
+## 1) `thresholds.blood_pressure` (SBP/DBP)
 
-**Configuration:** `thresholds.bmi`.
+Blood pressure categories follow widely used clinical framing (normal, elevated, stage-based hypertension, crisis-level ranges). Higher categories are associated with higher cardiovascular risk and higher all-cause risk in many cohorts.
 
-### Research rationale
-- Standard BMI categories (underweight, normal, overweight, obesity classes I–III) are globally used in risk stratification.
-- Large pooled analyses show increased mortality at both low BMI (underweight/frailty disease burden) and high BMI, with progressively higher risk in higher obesity classes.
-- Obesity is linked to major global mortality burden and reduced life expectancy at higher BMI ranges.
+Rationale for scores:
+- monotonic increase from normal to severe ranges
+- larger penalties in higher bins to reflect non-linear risk escalation at extreme pressure values
+- separate SBP and DBP binning retained because both carry signal across age groups
 
-### Score mapping logic
-- Underweight: `10` (non-zero due to elevated mortality risk in low BMI populations).
-- Normal: `0`.
-- Overweight: `10`.
-- Obesity classes I/II/III: `20 / 30 / 40`.
+## 2) `thresholds.pwv`
 
-Near-linear increments across obesity classes reflect stepwise hazard worsening.
+Pulse wave velocity (PWV) is used as an arterial stiffness proxy. Higher stiffness is associated with vascular aging and adverse cardiovascular outcomes.
 
----
+Rationale for scores:
+- PWV is optional in this system to preserve usability when not measured
+- provided PWV values are binned into increasing risk bands
+- absence of PWV is handled as missing data, not as a default low-risk assumption
 
-## 3) Waist circumference thresholds and scores
+## 3) `thresholds.bmi` and `thresholds.waist_circumference`
 
-**Configuration:** `thresholds.waist_circumference`.
+BMI and waist circumference are both included to capture general and central adiposity.
 
-### Research rationale
-- Abdominal adiposity predicts cardiometabolic and mortality risk beyond BMI in many cohorts.
-- Sex-specific risk gradients are established; example cohort findings show markedly higher mortality at high waist ranges (e.g., men >110 cm around ~1.5× vs <90 cm; women >95 cm around ~1.8× vs low-risk reference).
-- This supports both sex-specific cutoffs and stronger upper-bin penalties, especially in women for equivalent high-risk categories where relative risk has often been reported as larger.
+Rationale:
+- BMI supports broad body-mass categorization
+- waist circumference adds abdominal adiposity context often associated with cardiometabolic risk beyond BMI alone
+- sex-specific waist bands (`male`, `female`) reflect established differences in body-fat distribution risk interpretation
 
-### Score mapping logic
-- Men: `0 / 12 / 22 / 34`
-- Women: `0 / 12 / 24 / 38`
+## 4) `thresholds.sleep_duration`, `thresholds.sleep_quality`, `thresholds.sleep_consistency`
 
-Upper-bin spacing is larger than lower-bin spacing to match observed hazard acceleration at extreme central obesity.
+Sleep risk is modeled as a recovery domain.
 
----
+Rationale:
+- sleep duration uses a U-shaped structure with lowest risk around typical mid-range duration
+- very short and very long sleep carry higher penalties
+- quality and consistency are included because fragmented or irregular sleep is associated with adverse cardiometabolic and behavioral patterns
 
-## 4) Smoking thresholds and scores
+## 5) `thresholds.smoking`, `thresholds.alcohol`, `thresholds.drug_use`, `thresholds.caffeine_use`
 
-**Configuration:** `thresholds.smoking`.
+Lifestyle exposure bins convert category selections into risk points.
 
-### Research rationale
-- Smoking is among the strongest modifiable drivers of all-cause mortality and cardiovascular risk.
-- Smoking is also associated with accelerated biological aging markers relative to never-smokers.
-- Former smokers have persistent but reduced residual risk versus current smokers.
-
-### Score mapping logic
-- Never: `0`
-- Former (>=12 months abstinent): `10`
-- Occasional: `22`
-- Daily: `38`
-
-The daily-smoking value is intentionally high and exceeds moderate obesity or mild BP elevation bins, reflecting stronger and broad mortality impact.
+Rationale:
+- current smoking receives high penalty due to strong and consistent adverse association signals
+- alcohol and recreational drug-use bins are modeled as increasing risk gradients
+- caffeine is treated as a smaller-effect modifier within lifestyle context
 
 ---
 
-## 5) Sleep duration thresholds and scores
+## 6) `weights.*` system and component weighting
 
-**Configuration:** `thresholds.sleep_duration`.
+### System weights (`weights.systems` and mirrored `model.total_risk.system_weights`)
 
-### Research rationale
-- Cohort literature supports a U-shaped association between sleep duration and mortality, with lowest risk around ~7–8 h/night.
-- Short and very long sleep are both associated with elevated risk, increasing at extremes.
+Current weighting prioritizes:
+1. cardiovascular
+2. metabolic
+3. lifestyle
+4. recovery
 
-### Score mapping logic
-- Optimal (7–8 h): `0`
-- Mild deviation (6 or 9 h): `8`
-- Moderate deviation (5 or 10 h): `16`
-- Extreme deviation (<5 or >10 h): `26`
+Rationale:
+- cardiovascular and metabolic markers are core cardiometabolic risk anchors
+- lifestyle captures important modifiable behaviors
+- recovery (sleep) is meaningful but weighted lower relative to dominant physiological domains
 
-This preserves U-shape and assigns moderate (not dominant) influence relative to smoking/hypertension.
+### Within-system components
 
----
+Component weights reflect relative importance assumptions while preserving domain structure (for example, SBP/DBP/smoking contributions in cardiovascular and BMI/waist in metabolic).
 
-## 6) Physical activity and alcohol thresholds/scores
-
-**Configuration:** `thresholds.physical_activity`, `thresholds.alcohol`.
-
-### Research rationale
-- Meeting guideline-level activity (>=150 min/week moderate-intensity equivalent) is associated with lower mortality than inactivity.
-- Sedentary behavior and low activity increase all-cause risk in dose-response fashion.
-- Heavy alcohol intake increases multiple-cause mortality risk; low-risk intake carries lower relative hazard.
-
-### Score mapping logic
-- Physical activity: `0 / 10 / 20 / 30` from guideline-meeting to none.
-- Alcohol: `0 / 10 / 20` from low-risk to heavy.
-
-Activity receives broader spread because dose-response and attributable burden are typically stronger than modest alcohol category differences in general-population tools.
+These are design choices for an educational estimator and should be revisited if validated outcome-linked calibration data become available.
 
 ---
 
-## 7) System-level weights
+## 7) `model.age_delta` and caps
 
-**Configuration:** `weights.systems`.
+Composite risk is mapped to age delta using a linear rule:
+- pivot risk and pivot delta set the reference point
+- slope controls sensitivity in years per risk point
+- caps (`min_years`, `max_years`) bound extreme outputs
 
-- Cardiovascular: `0.36`
-- Metabolic: `0.30`
-- Lifestyle: `0.24`
-- Recovery: `0.10`
-
-### Research rationale
-- **Cardiovascular (highest)**: BP and smoking have strong, reproducible associations with CVD and all-cause mortality.
-- **Metabolic (second)**: adiposity (especially central obesity) substantially contributes to cardiometabolic and mortality burden.
-- **Lifestyle (third)**: smoking/activity/alcohol are critical modifiable exposures; smoking is additionally represented as a major contributor within this domain.
-- **Recovery (fourth)**: sleep contributes meaningful risk but with weaker/more confounded effect sizes than core BP/smoking exposures.
-
-Weights are normalized to 1.00 and set to keep stronger evidence domains proportionately larger.
+Rationale for caps:
+- prevents implausible age shifts for outlier combinations
+- improves interpretability for coaching contexts
+- limits over-extrapolation beyond confidence expected from a non-clinically calibrated model
 
 ---
 
-## 8) Within-system component weights
+## 8) Recommendations and counterfactuals
 
-**Configuration:** `weights.*_components`.
+`recommendations.*` and `counterfactual_targets.*` drive deterministic explanation outputs:
+- label-based recommendation tips
+- scenario simulations (BP, waist, smoking, sleep) that show modeled changes in risk and age delta
 
-### Cardiovascular components
-- SBP `0.52`, DBP `0.33`, Smoking `0.15`
-- Rationale: SBP is generally the stronger predictor across adult populations; DBP remains important; smoking also contributes to vascular risk.
-
-### Metabolic components
-- BMI `0.45`, Waist `0.55`
-- Rationale: central adiposity often adds predictive value above BMI alone, so waist is weighted slightly higher.
-
-### Lifestyle components
-- Smoking `0.50`, Physical activity `0.30`, Alcohol `0.20`
-- Rationale: smoking typically has the strongest hazard magnitude among these three; inactivity next; alcohol category effects are variable by pattern/context.
-
-### Recovery
-- Sleep duration `1.0`
+These outputs are explanatory and educational. They are not prescriptions.
 
 ---
 
-## 9) Risk-to-age-delta mapping
+## 9) Validation status and responsible use
 
-**Configuration:** `age_delta`.
+Current model status:
+- deterministic and reproducible
+- research-informed configuration
+- not clinically validated for diagnostic or prognostic use
 
-- `slope_years_per_risk_point: 0.25`
-- `min_years: -8`
-- `max_years: 15`
+Appropriate use:
+- wellness education
+- trend-oriented coaching discussions
+- hypothesis generation for lifestyle planning
 
-### Research rationale
-- Biological age outputs should be interpretable and bounded.
-- A quarter-year per aggregate risk point yields visible separation between low-, intermediate-, and high-risk profiles without generating implausible extremes in routine use.
-- Caps prevent over-extrapolation beyond evidence density for very high composite scores.
-
----
-
-## Notes on use and future calibration
-
-- This configuration is **research-aligned prior structure**, not a final fitted model.
-- If outcome-linked local data become available, re-calibrate point scales and slope with survival modeling while preserving directionality and clinical cut points.
-- Re-validation should include discrimination (e.g., C-statistic), calibration plots, subgroup fairness checks, and sensitivity analyses.
+Not appropriate use:
+- diagnosis
+- medication decisions
+- emergency triage
+- lifespan prediction claims
