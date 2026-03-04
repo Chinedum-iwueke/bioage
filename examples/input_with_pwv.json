@@ -1,0 +1,12 @@
+{
+  "demographics": {"chronological_age_years": 52, "sex": "female"},
+  "vitals": {"sbp_mmHg": 138, "dbp_mmHg": 88, "pwv_m_per_s": 9.4},
+  "anthropometrics": {"bmi": 29.1, "waist_cm": 96},
+  "lifestyle": {
+    "smoking_status": "former",
+    "alcohol_use": "moderate",
+    "drug_use": "none",
+    "caffeine_use": "moderate"
+  },
+  "sleep": {"sleep_hours": 6.0, "sleep_quality": "fair", "sleep_consistency": "somewhat_regular"}
+}

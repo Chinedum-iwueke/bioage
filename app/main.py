@@ -40,10 +40,10 @@ def _disclaimer_text() -> str:
     try:
         constants = load_constants(_constants_path())
         copy_cfg = constants.get("copy", {}) if isinstance(constants, dict) else {}
-        return str(copy_cfg.get("disclaimer_short", "Educational estimate only. TODO: load disclaimer from constants."))
+        return str(copy_cfg.get("disclaimer_short", "Educational guidance only. These results are not a diagnosis or treatment plan. Discuss personal decisions with a qualified healthcare professional."))
     except Exception:
         logger.exception("Failed to load constants for disclaimer")
-        return "Educational estimate only. TODO: load disclaimer from constants."
+        return "Educational guidance only. These results are not a diagnosis or treatment plan. Discuss personal decisions with a qualified healthcare professional."
 
 
 def _safe_run_id(run_id: str) -> str:
