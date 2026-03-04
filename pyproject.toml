@@ -29,6 +29,8 @@ testpaths = ["tests"]
 
 [tool.setuptools]
 include-package-data = true
+packages = ["bioage", "app"]
 
 [tool.setuptools.package-data]
+bioage = ["constants.yaml"]
 "bioage.report" = ["templates/*.html", "templates/*.css"]
