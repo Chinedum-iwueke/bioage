@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Input Error{% endblock %}
+{% block content %}
+<section>
+  <h2>We couldn't process your request</h2>
+  <p>{{ message }}</p>
+  <p><a href="/">Go back to the form</a></p>
+</section>
+<section class="disclaimer">
+  <h3>Disclaimer</h3>
+  <p>{{ disclaimer }}</p>
+</section>
+{% endblock %}

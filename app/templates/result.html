@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Results{% endblock %}
+{% block content %}
+<section class="summary" data-run-id="{{ run_id }}">
+  <h2>Biological Age Results</h2>
+  <ul>
+    <li>Chronological Age: <strong>{{ headline.chronological_age }}</strong></li>
+    <li>Biological Age: <strong>{{ headline.biological_age }}</strong></li>
+    <li>Age Delta: <strong>{{ headline.age_delta }}</strong></li>
+    <li>Total Risk (0-100): <strong>{{ headline.total_risk }}</strong></li>
+  </ul>
+</section>
+
+<section>
+  <h3>Top Drivers</h3>
+  <ol>
+    {% for d in drivers %}
+      <li>{{ d.metric }} ({{ d.contribution }})</li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section>
+  <h3>Priority Actions</h3>
+  <ol>
+    {% for a in actions %}
+      <li>{{ a }}</li>
+    {% endfor %}
+  </ol>
+</section>
+
+{% if missing_metrics %}
+<section>
+  <h3>Missing Metrics</h3>
+  <ul>{% for m in missing_metrics %}<li>{{ m }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if warnings %}
+<section>
+  <h3>Warnings</h3>
+  <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="actions">
+  <a href="/runs/{{ run_id }}/download/report.html">Download Report (HTML)</a>
+  <a href="/runs/{{ run_id }}/report">View Report (HTML)</a>
+  {% if has_pdf %}
+  <a href="/runs/{{ run_id }}/download/report.pdf">Download Report (PDF)</a>
+  {% endif %}
+  <a href="/runs/{{ run_id }}/charts">View Charts</a>
+</section>
+
+<section class="disclaimer">
+  <h3>Disclaimer</h3>
+  <p>{{ disclaimer }}</p>
+</section>
+{% endblock %}

@@ -9,8 +9,11 @@ description = "Educational wellness estimation scaffolding for biological age st
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+  "fastapi>=0.110",
   "jinja2>=3.1",
   "matplotlib>=3.7",
+  "python-multipart>=0.0.9",
+  "uvicorn>=0.29",
 ]
 
 [project.optional-dependencies]

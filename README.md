@@ -84,3 +84,20 @@ Use `--constants <path/to/constants.yaml>` to load a different constants file. H
 - Deterministic outputs: JSON is written with sorted keys and stable indentation.
 - Disclaimers are embedded prominently in the report intro and footer.
 - PDF export is intentionally optional; recommended future method is WeasyPrint (`report.html` → `report.pdf`).
+
+## Web App
+
+Run the minimal FastAPI UI:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Then open `http://127.0.0.1:8000/` for the input form. Submissions create deterministic run artifacts under `outputs/web/` by default (or the directory in `BIOAGE_OUTPUT_DIR`).
+
+Environment variables:
+
+- `BIOAGE_CONSTANTS_PATH` to override constants YAML path.
+- `BIOAGE_OUTPUT_DIR` to override web run output directory (default `outputs/web`).
+
+Disclaimer: This tool provides an educational estimate only and does not provide diagnosis, treatment, or medical advice.
