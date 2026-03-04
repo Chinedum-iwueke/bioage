@@ -1,0 +1,17 @@
+<section class="page">
+  <h2>Biological Age</h2>
+  <div class="metric-grid">
+    <div><strong>Chronological Age:</strong> {{ headline.chronological_age }} years</div>
+    <div><strong>Biological Age:</strong> {{ headline.biological_age }} years</div>
+    <div><strong>Age Delta:</strong> {{ headline.age_delta }} years</div>
+  </div>
+  <img src="{{ charts.bio_age }}" alt="Biological age bar chart" />
+  <p>Your biological age estimate reflects a weighted wellness signal from cardiovascular, metabolic, lifestyle, and recovery inputs.</p>
+  <p>Total risk index: {{ headline.total_risk }}. Scores are educational and should be read as trend guidance rather than diagnosis.</p>
+  <h3>Top Drivers</h3>
+  <ul>
+    {% for driver in top_drivers %}
+    <li>{{ driver.metric|replace('_', ' ')|title }} ({{ driver.system|title }}): contribution {{ driver.contribution }}</li>
+    {% endfor %}
+  </ul>
+</section>

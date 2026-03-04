@@ -1,6 +1,6 @@
 # bioage
 
-Biological Age Calculator (Educational Wellness Estimation Tool) scaffolding for deterministic, config-driven reporting workflows, with placeholder scoring/model logic and an HTML-first report pipeline that mirrors the uploaded sample guide's structure.
+Biological Age Calculator (educational wellness estimation tool) with deterministic scoring/modeling, explanation generation, and HTML-first report output.
 
 ## Install
 
@@ -10,49 +10,77 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
-## Run CLI smoke command
+## CLI
 
 ```bash
 python -m bioage --help
 python -m bioage demo --outdir outputs/demo_run/
+python -m bioage run --input examples/input.json --outdir outputs/
 ```
+
+### Commands
+
+- `bioage demo --outdir <path> [--pdf] [--constants <path>] [--assets <path>]`
+- `bioage run --input <path.json> --outdir <path> [--pdf] [--constants <path>] [--assets <path>]`
+
+If `bioage run` is given an existing directory (for example `outputs/`), it creates a UTC timestamped run folder: `run_YYYYMMDD_HHMMSS`.
+
+## Input JSON examples
+
+### BMI-only payload
+
+```json
+{
+  "demographics": {"chronological_age_years": 45, "sex": "female"},
+  "vitals": {"sbp_mmHg": 130, "dbp_mmHg": 85, "pwv_m_per_s": 9.1},
+  "anthropometrics": {"bmi": 27.2, "waist_cm": 91},
+  "lifestyle": {
+    "smoking_status": "never",
+    "alcohol_use": "light",
+    "drug_use": "none",
+    "caffeine_use": "moderate"
+  },
+  "sleep": {"sleep_hours": 7.0, "sleep_quality": "good", "sleep_consistency": "regular"}
+}
+```
+
+### Height + weight payload
+
+```json
+{
+  "demographics": {"chronological_age_years": 39, "sex": "male"},
+  "vitals": {"sbp_mmHg": 122, "dbp_mmHg": 79},
+  "anthropometrics": {"height_cm": 178, "weight_kg": 80, "waist_cm": 91},
+  "lifestyle": {
+    "smoking_status": "never",
+    "alcohol_use": "light",
+    "drug_use": "none",
+    "caffeine_use": "low"
+  },
+  "sleep": {"sleep_hours": 7.2, "sleep_quality": "good", "sleep_consistency": "regular"}
+}
+```
+
+## Output artifact layout
+
+Each successful run writes:
+
+- `inputs_raw.json`
+- `inputs_normalized.json`
+- `scores.json`
+- `result.json`
+- `explanations.json`
+- `report.html`
+- `charts/*.png`
+- `run_meta.json` (contains `constants_hash`, `input_hash`, model/environment metadata)
+- `report.pdf` only when a PDF backend is implemented (currently optional/stub)
+
+## Constants override
+
+Use `--constants <path/to/constants.yaml>` to load a different constants file. Hashing in `run_meta.json` is computed from the resolved constants file bytes to preserve run traceability.
 
 ## Notes
 
-- Scoring is deterministic and config-driven: score thresholds, bins, and weights are loaded from `bioage/constants.yaml`.
-- The demo command writes `scores.json` with per-metric risk scores and missing-data notes.
-- Educational use only: output includes disclaimers and is not a diagnosis or medical advice.
-- Explanations are deterministic and derived from constants.yaml tables (drivers, recommendations, and domain interpretations).
-- Counterfactuals are educational simulations, not medical predictions.
-- `constants.yaml` and research basis will be added in Task 1.5.
-
-## Inputs & Units
-
-`bioage.schema.normalize_request(raw)` validates and normalizes questionnaire payloads into canonical fields used by downstream scoring/model code.
-
-- Demographics: `chronological_age_years` (years), `sex` (`male`/`female`).
-- Vitals: `sbp_mmHg`, `dbp_mmHg`, optional `pwv_m_per_s` (m/s).
-- Anthropometrics: `waist_cm` required; provide either `bmi` or both `height_cm` + `weight_kg`.
-- Lifestyle enums: smoking/alcohol/drug/caffeine usage are normalized case-insensitively.
-- Sleep: `sleep_hours`, `sleep_quality`, `sleep_consistency`.
-
-The normalizer computes BMI from height+weight when available, checks sanity ranges, and adds deterministic warnings for suspicious inputs (for example likely unit mismatches or missing optional PWV). It does **not** apply scoring logic or clinical risk thresholds.
-
-
-## Adjusting scoring constants safely
-
-1. Edit `bioage/constants.yaml` (do not hardcode thresholds in Python).
-2. Run `pytest -q` to validate boundary behavior against the updated config.
-3. Re-run `python -m bioage demo --outdir outputs/demo_run/` to regenerate normalized inputs and scores.
-
-
-## Model pipeline
-
-The Task 4 model pipeline is deterministic and config-driven:
-
-- `score_request` computes per-metric risk scores (`bp`, `pwv`, `bmi`, `waist`, `sleep`, `lifestyle`).
-- `run_model` aggregates those into system subscores (`cardio`, `metabolic`, `lifestyle`, `recovery`).
-- Subscores are combined into a weighted total risk score (0–100), with weight renormalization if a full system is unavailable.
-- Total risk is mapped to age delta (years) with configured linear mapping + caps, then converted to biological age.
-
-All model weights, subscore component definitions, and age-delta mapping parameters live in `bioage/constants.yaml` (not hardcoded in Python).
+- Deterministic outputs: JSON is written with sorted keys and stable indentation.
+- Disclaimers are embedded prominently in the report intro and footer.
+- PDF export is intentionally optional; recommended future method is WeasyPrint (`report.html` → `report.pdf`).

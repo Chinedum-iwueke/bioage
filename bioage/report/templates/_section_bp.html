@@ -1,0 +1,9 @@
+<section class="page">
+  <h2>Blood Pressure</h2>
+  <p><strong>SBP/DBP:</strong> {{ vitals.sbp }}/{{ vitals.dbp }} mmHg ({{ vitals.bp_label }})</p>
+  <div class="dual-chart">
+    <img src="{{ charts.bp_sbp }}" alt="SBP gauge" />
+    <img src="{{ charts.bp_dbp }}" alt="DBP gauge" />
+  </div>
+  <p>Interpretation: higher blood pressure categories are associated with increased long-term vascular strain.</p>
+</section>
