@@ -10,6 +10,7 @@ import shutil
 from bioage.constants_loader import load_constants
 from bioage.scoring import score_request
 from bioage.model import run_model
+from bioage.explain import build_explanation_bundle
 from bioage.schema import ClientMetadata, DemoResult, normalize_request
 from bioage.report import charts
 from bioage.report.render import TEMPLATES_DIR, render_report
@@ -62,6 +63,7 @@ def run_demo(outdir: Path) -> int:
     constants = load_constants()
     scores = score_request(normalized_inputs, constants)
     model_result = run_model(normalized_inputs, constants)
+    explanations = build_explanation_bundle(normalized_inputs, model_result, constants)
 
     result.actual_age = model_result["inputs"]["chronological_age_years"]
     result.biological_age = round(model_result["biological_age_years"])
@@ -91,6 +93,7 @@ def run_demo(outdir: Path) -> int:
         json.dumps(normalized_inputs.to_dict(), indent=2), encoding="utf-8"
     )
     (outdir / "scores.json").write_text(json.dumps(scores, indent=2), encoding="utf-8")
+    (outdir / "explanations.json").write_text(json.dumps(explanations, indent=2), encoding="utf-8")
 
     print(CLI_DISCLAIMER)
     print(f"Demo report generated at: {outdir / 'report.html'}")

@@ -42,23 +42,24 @@ def _matches_clause(value: float, clause: str) -> bool:
     return abs(value - float(token)) <= _EPSILON
 
 
-def _score_from_ranged_mapping(value: float, mapping: dict[str, Any], label: str) -> int:
+def _label_from_ranged_mapping(value: float, mapping: dict[str, Any], label: str) -> str:
     for bucket_name, bucket in mapping.items():
         range_expr = bucket.get("range")
         if not isinstance(range_expr, str):
             raise ValueError(f"Constants entry '{label}.{bucket_name}' must include a string range")
         clauses = [part.strip() for part in range_expr.split("or")]
         if any(_matches_clause(value, clause) for clause in clauses):
-            return _clamp_0_100(float(bucket["score"]))
+            return str(bucket_name)
     raise ValueError(f"No {label} range matched value: {value}")
 
 
-def score_bp(sbp_mmHg: int, dbp_mmHg: int, constants: dict[str, Any]) -> int:
-    """Score BP by explicit category precedence using config-driven thresholds.
+def _score_from_ranged_mapping(value: float, mapping: dict[str, Any], label: str) -> int:
+    bucket_name = _label_from_ranged_mapping(value, mapping, label)
+    return _clamp_0_100(float(mapping[bucket_name]["score"]))
 
-    Logic: check highest-severity categories first; a category matches when either
-    systolic or diastolic value falls in that category.
-    """
+
+def label_bp(sbp_mmHg: int, dbp_mmHg: int, constants: dict[str, Any]) -> str:
+    """Classify BP category by explicit category precedence using config-driven thresholds."""
     systolic = constants["thresholds"]["blood_pressure"]["systolic"]
     diastolic = constants["thresholds"]["blood_pressure"]["diastolic"]
 
@@ -76,13 +77,28 @@ def score_bp(sbp_mmHg: int, dbp_mmHg: int, constants: dict[str, Any]) -> int:
         matches_s = bool(s_cat and _matches_clause(float(sbp_mmHg), s_cat["range"]))
         matches_d = bool(d_cat and _matches_clause(float(dbp_mmHg), d_cat["range"]))
         if matches_s or matches_d:
-            if s_cat and "score" in s_cat:
-                return _clamp_0_100(float(s_cat["score"]))
-            if d_cat and "score" in d_cat:
-                return _clamp_0_100(float(d_cat["score"]))
-            raise ValueError(f"Blood pressure category '{category}' lacks score")
+            return category
 
     raise ValueError("No blood pressure category matched provided SBP/DBP")
+
+
+def score_bp(sbp_mmHg: int, dbp_mmHg: int, constants: dict[str, Any]) -> int:
+    category = label_bp(sbp_mmHg, dbp_mmHg, constants)
+    systolic = constants["thresholds"]["blood_pressure"]["systolic"]
+    diastolic = constants["thresholds"]["blood_pressure"]["diastolic"]
+    s_cat = systolic.get(category)
+    d_cat = diastolic.get(category)
+    if s_cat and "score" in s_cat:
+        return _clamp_0_100(float(s_cat["score"]))
+    if d_cat and "score" in d_cat:
+        return _clamp_0_100(float(d_cat["score"]))
+    raise ValueError(f"Blood pressure category '{category}' lacks score")
+
+
+def label_pwv(pwv_m_per_s: float | None, constants: dict[str, Any]) -> str | None:
+    if pwv_m_per_s is None:
+        return None
+    return _label_from_ranged_mapping(float(pwv_m_per_s), constants["thresholds"]["pwv"], "thresholds.pwv")
 
 
 def score_pwv(pwv_m_per_s: float | None, constants: dict[str, Any]) -> int | None:
@@ -91,8 +107,23 @@ def score_pwv(pwv_m_per_s: float | None, constants: dict[str, Any]) -> int | Non
     return _score_from_ranged_mapping(float(pwv_m_per_s), constants["thresholds"]["pwv"], "thresholds.pwv")
 
 
+def label_bmi(bmi: float, constants: dict[str, Any]) -> str:
+    return _label_from_ranged_mapping(float(bmi), constants["thresholds"]["bmi"], "thresholds.bmi")
+
+
 def score_bmi(bmi: float, constants: dict[str, Any]) -> int:
     return _score_from_ranged_mapping(float(bmi), constants["thresholds"]["bmi"], "thresholds.bmi")
+
+
+def label_waist(sex: str, waist_cm: float, constants: dict[str, Any]) -> str:
+    sex_key = sex.lower().strip()
+    waist_constants = constants["thresholds"]["waist_circumference"]
+    if sex_key not in waist_constants:
+        allowed = ", ".join(sorted(waist_constants.keys()))
+        raise ValueError(f"Unsupported sex for waist scoring: {sex}. Allowed values: {allowed}")
+    return _label_from_ranged_mapping(
+        float(waist_cm), waist_constants[sex_key], f"thresholds.waist_circumference.{sex_key}"
+    )
 
 
 def score_waist(sex: str, waist_cm: float, constants: dict[str, Any]) -> int:
@@ -102,6 +133,12 @@ def score_waist(sex: str, waist_cm: float, constants: dict[str, Any]) -> int:
         allowed = ", ".join(sorted(waist_constants.keys()))
         raise ValueError(f"Unsupported sex for waist scoring: {sex}. Allowed values: {allowed}")
     return _score_from_ranged_mapping(float(waist_cm), waist_constants[sex_key], f"thresholds.waist_circumference.{sex_key}")
+
+
+def label_sleep_duration(sleep_hours: float, constants: dict[str, Any]) -> str:
+    return _label_from_ranged_mapping(
+        float(sleep_hours), constants["thresholds"]["sleep_duration"], "thresholds.sleep_duration"
+    )
 
 
 def score_sleep(
@@ -149,6 +186,23 @@ def score_lifestyle(
     return _clamp_0_100(total)
 
 
+def metric_labels(req: BioAgeRequest, constants: dict[str, Any] | None = None) -> dict[str, str | None]:
+    config = constants if constants is not None else load_constants()
+    return {
+        "bp": label_bp(req.vitals.sbp_mmHg, req.vitals.dbp_mmHg, config),
+        "pwv": label_pwv(req.vitals.pwv_m_per_s, config),
+        "bmi": label_bmi(float(req.anthropometrics.bmi), config),
+        "waist": label_waist(req.demographics.sex.value, req.anthropometrics.waist_cm, config),
+        "smoking": req.lifestyle.smoking_status.value,
+        "alcohol": req.lifestyle.alcohol_use.value,
+        "drug_use": req.lifestyle.drug_use.value,
+        "caffeine_use": req.lifestyle.caffeine_use.value,
+        "sleep_duration": label_sleep_duration(req.sleep.sleep_hours, config),
+        "sleep_quality": req.sleep.sleep_quality.value,
+        "sleep_consistency": req.sleep.sleep_consistency.value,
+    }
+
+
 def score_request(req: BioAgeRequest, constants: dict[str, Any] | None = None) -> dict[str, Any]:
     config = constants if constants is not None else load_constants()
 
@@ -175,5 +229,6 @@ def score_request(req: BioAgeRequest, constants: dict[str, Any] | None = None) -
 
     return {
         "metric_scores": metric_scores,
+        "metric_labels": metric_labels(req, config),
         "notes": {"pwv_missing": pwv_score is None},
     }

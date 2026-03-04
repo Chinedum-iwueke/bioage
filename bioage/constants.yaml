@@ -240,3 +240,128 @@ model:
     caps:
       min_years: -8
       max_years: 15
+
+copy:
+  disclaimer_short: "Educational guidance only. These results are not a diagnosis or treatment plan. Discuss personal decisions with a qualified healthcare professional."
+  domain_summaries:
+    cardio: "Cardiovascular markers reflect blood pressure and arterial stiffness patterns linked with vascular workload over time."
+    metabolic: "Metabolic markers reflect body composition patterns associated with long-term cardiometabolic strain."
+    lifestyle: "Lifestyle markers summarize smoking and substance-use patterns that can influence long-term aging trajectories."
+    recovery: "Recovery markers summarize sleep duration and regularity patterns tied to daily restoration."
+  counterfactual_labels:
+    bp: "If blood pressure moved into the normal range"
+    waist: "If waist circumference moved to a healthier range"
+    smoking: "If smoking status improved"
+    sleep: "If sleep duration and consistency moved into an optimal range"
+
+recommendations:
+  bp:
+    normal:
+      tips: ["Maintain current blood-pressure-supportive habits with regular monitoring."]
+    elevated:
+      tips: ["Track home blood pressure trends weekly.", "Prioritize sodium awareness, regular activity, and stress-management routines."]
+    stage_1_hypertension:
+      tips: ["Create a structured plan to lower blood pressure through diet, movement, and sleep consistency.", "Review elevated readings with a healthcare professional."]
+    stage_2_hypertension:
+      tips: ["Prioritize blood pressure improvement with prompt professional follow-up.", "Use daily routines for nutrition quality, activity, and medication adherence if prescribed."]
+    hypertensive_crisis:
+      tips: ["Seek urgent clinical guidance for very high blood pressure readings.", "Do not rely on this educational tool for immediate medical decisions."]
+  waist:
+    low_risk:
+      tips: ["Maintain current waist-management habits through sustainable nutrition and activity."]
+    increased_risk:
+      tips: ["Aim for gradual waist reduction using portion awareness and consistent weekly exercise."]
+    high_risk:
+      tips: ["Prioritize waist reduction with structured nutrition planning and progressive activity targets.", "Review your plan with a healthcare professional if progress stalls."]
+    very_high_risk:
+      tips: ["Set a staged waist-reduction goal with professional support.", "Focus on sustainable calorie balance, resistance training, and sleep quality."]
+  bmi:
+    underweight:
+      tips: ["Support healthy weight restoration with nutrient-dense meals and strength-focused training."]
+    normal:
+      tips: ["Maintain current body-weight habits with balanced nutrition and activity."]
+    overweight:
+      tips: ["Target gradual weight reduction through consistent nutrition and movement routines."]
+    obesity_class_1:
+      tips: ["Use a structured weight-management plan with measurable weekly behaviors."]
+    obesity_class_2:
+      tips: ["Prioritize supervised weight-management support and sustainable routine changes."]
+    obesity_class_3:
+      tips: ["Discuss comprehensive weight-management options with a healthcare professional."]
+  smoking:
+    never:
+      tips: ["Maintain smoke-free habits."]
+    former:
+      tips: ["Continue relapse-prevention routines and smoke-free environments."]
+    current:
+      tips: ["Quitting smoking is one of the highest-impact actions in this model.", "Use evidence-based cessation support with a healthcare professional."]
+  alcohol:
+    none:
+      tips: ["Maintain low-risk alcohol habits."]
+    light:
+      tips: ["Maintain moderation and alcohol-free days each week."]
+    moderate:
+      tips: ["Consider reducing alcohol frequency or quantity to lower modeled risk."]
+    heavy:
+      tips: ["Reduce alcohol intake with structured support and professional guidance when needed."]
+  drug_use:
+    none:
+      tips: ["Maintain substance-free habits."]
+    occasional:
+      tips: ["Reducing recreational drug use can improve modeled lifestyle risk."]
+    regular:
+      tips: ["Prioritize reducing drug use with professional support resources."]
+  caffeine_use:
+    none:
+      tips: ["Current caffeine pattern is acceptable in this model."]
+    low:
+      tips: ["Current caffeine pattern is acceptable in this model."]
+    moderate:
+      tips: ["Keep caffeine timing earlier in the day to support sleep quality."]
+    high:
+      tips: ["Reduce high caffeine exposure, especially late-day intake."]
+  sleep_duration:
+    optimal:
+      tips: ["Maintain your current sleep-duration routine."]
+    short_or_long_mild:
+      tips: ["Adjust schedule toward a consistent 7-8 hour sleep window."]
+    short_or_long_moderate:
+      tips: ["Prioritize schedule changes that move sleep duration toward 7-8 hours nightly."]
+    very_short_or_very_long:
+      tips: ["Address extreme sleep duration patterns with a structured recovery routine and professional input if persistent."]
+  sleep_quality:
+    poor:
+      tips: ["Improve sleep environment and pre-sleep routine to support better quality."]
+    fair:
+      tips: ["Strengthen wind-down habits and bedroom conditions to improve sleep quality."]
+    good:
+      tips: ["Maintain your current sleep-quality routine."]
+    excellent:
+      tips: ["Maintain your current sleep-quality routine."]
+  sleep_consistency:
+    irregular:
+      tips: ["Set a consistent sleep and wake schedule across weekdays and weekends."]
+    somewhat_regular:
+      tips: ["Narrow night-to-night timing variation to improve recovery consistency."]
+    regular:
+      tips: ["Maintain your regular sleep schedule."]
+
+counterfactual_targets:
+  bp:
+    target_category: normal
+    representative_sbp: 116
+    representative_dbp: 74
+  waist:
+    target_category: low_risk
+    representative_cm_by_sex:
+      male: 88
+      female: 78
+  smoking:
+    transitions:
+      current: former
+      former: never
+  sleep:
+    target_duration_category: optimal
+    representative_hours: 7.5
+    target_quality: good
+    target_consistency: regular
