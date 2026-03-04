@@ -373,7 +373,7 @@ The model must not crash on partial inputs. Missing data must be handled determi
 
 ## 12. Determinism & Versioning
 
-- All thresholds, risk maps, and weights are stored in `constants.yaml` (Task 1.5).
+- All thresholds, risk maps, and weights are stored in `constants.yaml`.
 - Output must include a required model version string, e.g., `MODEL_VERSION`.
 - Given identical inputs and identical constants version, outputs must be identical.
 - Any constant changes require model version increment according to project release policy.
