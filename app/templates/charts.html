@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Charts{% endblock %}
+{% block content %}
+<section>
+  <h2>Charts</h2>
+  {% if chart_files %}
+    <div class="charts">
+      {% for file in chart_files %}
+      <figure>
+        <img src="/media/{{ run_id }}/charts/{{ file }}" alt="{{ file }}">
+        <figcaption>{{ file }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No charts were generated for this run.</p>
+  {% endif %}
+</section>
+{% endblock %}

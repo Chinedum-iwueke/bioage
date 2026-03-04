@@ -1,0 +1,11 @@
+body { font-family: Arial, sans-serif; background: #f7f7f7; color: #222; }
+.container { max-width: 900px; margin: 2rem auto; background: white; padding: 1.5rem; border-radius: 8px; }
+.subtitle { color: #555; }
+fieldset { border: 1px solid #ddd; margin-bottom: 1rem; padding: 1rem; }
+label { display: block; margin-bottom: 0.7rem; }
+input, select { display: block; margin-top: 0.25rem; padding: 0.4rem; width: 100%; max-width: 320px; }
+button, a { margin-right: 0.6rem; }
+.req { color: #a00; }
+.disclaimer { border-left: 4px solid #c77; background: #fff4f4; padding: 0.75rem; margin-bottom: 1rem; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.charts img { max-width: 100%; border: 1px solid #ccc; }
