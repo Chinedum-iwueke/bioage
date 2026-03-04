@@ -1,0 +1,22 @@
+<section class="page appendix">
+  <h3>Lifestyle Notes</h3>
+  <ul>
+    {% for note in lifestyle_notes[:8] %}
+    <li>{{ note }}</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Priority Actions</h3>
+  <ul>
+    {% for action in priority_actions %}
+    <li>{{ action }}</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Further Testing</h3>
+  <ul>
+    {% for line in further_testing %}
+    <li>{{ line }}</li>
+    {% endfor %}
+  </ul>
+</section>

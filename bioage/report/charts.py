@@ -1,76 +1,85 @@
-"""Placeholder chart builders modeled after the style in the sample guide."""
+"""Deterministic matplotlib chart builders for report rendering."""
 
 from __future__ import annotations
 
 from pathlib import Path
-import base64
+from typing import Any
 
 
-COLORS = {
-    "good": "#6fbf73",
-    "moderate": "#f2c14e",
-    "high": "#e76f51",
-    "marker": "#1f2937",
-}
-
-_MINIMAL_PNG = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9K6a0AAAAASUVORK5CYII="
-)
-
-
-def _prepare(path: Path):
+def _prepare(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def _write_fallback_png(path: Path) -> Path:
-    _prepare(path)
-    path.write_bytes(_MINIMAL_PNG)
-    return path
+def _band_max(bands: list[dict[str, Any]]) -> float:
+    return max(float(b["max"]) for b in bands)
 
 
-def biological_age_bar(path: Path, actual_age: float, biological_age: float) -> Path:
-    try:
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError:
-        return _write_fallback_png(path)
+def _safe_value(value: float, bands: list[dict[str, Any]]) -> float:
+    low = float(min(b["min"] for b in bands))
+    high = _band_max(bands)
+    return max(low, min(float(value), high))
 
-    _prepare(path)
-    fig, ax = plt.subplots(figsize=(8, 2.5))
-    ax.barh(["Actual Age", "Biological Age"], [actual_age, biological_age], color=["#93c5fd", "#2563eb"])
-    ax.set_xlabel("Years")
+
+def plot_bioage_bar(chron_age: float, bio_age: float, outpath: Path) -> Path:
+    import matplotlib.pyplot as plt
+
+    _prepare(outpath)
+    fig, ax = plt.subplots(figsize=(6.0, 3.2))
+    labels = ["Chronological Age", "Biological Age"]
+    values = [float(chron_age), float(bio_age)]
+    colors = ["#8ab4f8", "#2b6cb0"]
+    bars = ax.bar(labels, values, color=colors, width=0.6)
+
+    for bar, value in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 0.4, f"{value:.1f}", ha="center", va="bottom", fontsize=10)
+
+    ax.set_ylabel("Years")
     ax.set_title("Age Comparison")
+    ax.grid(axis="y", linestyle="--", alpha=0.35)
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(outpath, dpi=160)
     plt.close(fig)
-    return path
+    return outpath
 
 
-def vertical_gauge(path: Path, title: str, marker_value: float = 0.6) -> Path:
-    try:
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError:
-        return _write_fallback_png(path)
+def plot_gauge(value: float, bands: list[dict], outpath: Path, title: str, subtitle: str | None = None) -> Path:
+    import matplotlib.pyplot as plt
 
-    _prepare(path)
-    fig, ax = plt.subplots(figsize=(2.6, 5))
-    ax.bar(0, 0.33, bottom=0.0, color=COLORS["good"], width=0.5)
-    ax.bar(0, 0.33, bottom=0.33, color=COLORS["moderate"], width=0.5)
-    ax.bar(0, 0.34, bottom=0.66, color=COLORS["high"], width=0.5)
-    ax.axhline(marker_value, color=COLORS["marker"], linewidth=3)
-    ax.set_xlim(-0.8, 0.8)
-    ax.set_ylim(0, 1)
-    ax.set_xticks([])
+    _prepare(outpath)
+    total_max = _band_max(bands)
+    v = _safe_value(float(value), bands)
+
+    fig, ax = plt.subplots(figsize=(6.4, 1.8))
+    for band in bands:
+        left = float(band["min"])
+        width = float(band["max"]) - left
+        ax.barh(0, width, left=left, height=0.48, color=str(band["color"]), edgecolor="white")
+
+    ax.plot([v, v], [-0.45, 0.45], color="#1f2937", linewidth=2.4)
+    ax.text(v, 0.6, f"{value:.1f}", ha="center", va="bottom", fontsize=10, color="#111827")
+
+    ax.set_xlim(float(min(b["min"] for b in bands)), total_max)
+    ax.set_ylim(-0.9, 1.0)
     ax.set_yticks([])
-    ax.set_title(title)
+    ax.set_xlabel(subtitle or "")
+    ax.set_title(title, fontsize=12, loc="left")
+
+    tick_values = sorted({float(b["min"]) for b in bands} | {float(b["max"]) for b in bands})
+    ax.set_xticks(tick_values)
+    ax.grid(axis="x", linestyle=":", alpha=0.3)
     for spine in ax.spines.values():
         spine.set_visible(False)
+
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(outpath, dpi=160)
     plt.close(fig)
-    return path
+    return outpath
 
 
-def blood_pressure_dual(path_sbp: Path, path_dbp: Path) -> tuple[Path, Path]:
-    vertical_gauge(path_sbp, "SBP Gauge", marker_value=0.58)
-    vertical_gauge(path_dbp, "DBP Gauge", marker_value=0.50)
-    return path_sbp, path_dbp
+def plot_bp_gauges(sbp: float, dbp: float, sbp_bands: list[dict], dbp_bands: list[dict], outdir: Path) -> dict:
+    outdir.mkdir(parents=True, exist_ok=True)
+    sbp_path = outdir / "bp_sbp_gauge.png"
+    dbp_path = outdir / "bp_dbp_gauge.png"
+    plot_gauge(float(sbp), sbp_bands, sbp_path, title="Systolic Blood Pressure", subtitle="mmHg")
+    plot_gauge(float(dbp), dbp_bands, dbp_path, title="Diastolic Blood Pressure", subtitle="mmHg")
+    return {"sbp": sbp_path, "dbp": dbp_path}

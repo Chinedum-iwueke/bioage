@@ -1,40 +1,116 @@
+:root {
+  --text: #1f2937;
+  --muted: #4b5563;
+  --bg: #f4f6f8;
+  --page: #ffffff;
+  --border: #d1d5db;
+  --accent: #1d4ed8;
+}
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Helvetica Neue", Arial, sans-serif;
   margin: 0;
-  color: #1f2937;
+  color: var(--text);
+  background: var(--bg);
 }
 
 .page {
-  padding: 32px;
-  border-bottom: 1px solid #d1d5db;
+  width: 210mm;
+  min-height: 287mm;
+  margin: 16px auto;
+  background: var(--page);
+  padding: 18mm;
+  box-sizing: border-box;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   page-break-after: always;
 }
 
-h1, h2, h3, h4 {
-  margin: 0 0 12px;
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 10px;
+}
+
+h1 {
+  font-size: 36px;
+  color: var(--accent);
+}
+
+p,
+li {
+  line-height: 1.45;
+  color: var(--muted);
 }
 
 img {
   max-width: 100%;
-  height: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
+  padding: 4px;
   margin: 8px 0;
+  background: #fff;
 }
 
-.dual-chart {
-  display: flex;
-  gap: 12px;
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-.disclaimer {
+.metric-grid div {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  background: #f9fafb;
+}
+
+.disclaimer,
+.callout {
   margin-top: 12px;
   padding: 12px;
-  border-left: 4px solid #b91c1c;
+  border-left: 5px solid #b91c1c;
   background: #fef2f2;
 }
 
+.dual-chart {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.toc-page ol {
+  padding-left: 20px;
+}
+
+.toc-page li {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px dotted var(--border);
+  padding: 6px 0;
+}
+
 footer {
-  padding: 16px 32px;
+  width: 210mm;
+  margin: 0 auto 24px;
+  padding: 8px 18mm;
   font-size: 12px;
-  background: #f9fafb;
+  color: #374151;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .page {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+  footer {
+    width: auto;
+    margin: 0;
+  }
 }
