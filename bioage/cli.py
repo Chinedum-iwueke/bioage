@@ -9,6 +9,7 @@ import shutil
 
 from bioage.constants_loader import load_constants
 from bioage.scoring import score_request
+from bioage.model import run_model
 from bioage.schema import ClientMetadata, DemoResult, normalize_request
 from bioage.report import charts
 from bioage.report.render import TEMPLATES_DIR, render_report
@@ -58,8 +59,12 @@ def run_demo(outdir: Path) -> int:
         }
     )
 
-    scores = score_request(normalized_inputs, load_constants())
+    constants = load_constants()
+    scores = score_request(normalized_inputs, constants)
+    model_result = run_model(normalized_inputs, constants)
 
+    result.actual_age = model_result["inputs"]["chronological_age_years"]
+    result.biological_age = round(model_result["biological_age_years"])
 
     bio = charts.biological_age_bar(charts_dir / "bio_age_bar.png", result.actual_age, result.biological_age)
     stiff = charts.vertical_gauge(charts_dir / "arterial_stiffness_gauge.png", "Arterial Stiffness")
@@ -81,7 +86,7 @@ def run_demo(outdir: Path) -> int:
     render_report(context=context, output_html=outdir / "report.html")
     shutil.copy2(TEMPLATES_DIR / "styles.css", outdir / "styles.css")
 
-    (outdir / "result.json").write_text(json.dumps(context, indent=2), encoding="utf-8")
+    (outdir / "result.json").write_text(json.dumps(model_result, indent=2), encoding="utf-8")
     (outdir / "inputs_normalized.json").write_text(
         json.dumps(normalized_inputs.to_dict(), indent=2), encoding="utf-8"
     )

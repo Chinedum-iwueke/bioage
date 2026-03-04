@@ -198,9 +198,45 @@ weights:
     consistency: 0.20
 
 age_delta:
+  pivot_risk: 50
+  pivot_delta_years: 0
   slope_years_per_risk_point: 0.25
   min_years: -8
   max_years: 15
   interpretation:
     low_risk_bonus_threshold: 20
     high_risk_threshold: 70
+
+
+model:
+  version: "1.0.0"
+  subscores:
+    aggregation_default: mean
+    systems:
+      cardio:
+        components: bp,pwv
+        aggregation: mean
+      metabolic:
+        components: bmi,waist
+        aggregation: mean
+      lifestyle:
+        components: lifestyle
+        aggregation: mean
+      recovery:
+        components: sleep
+        aggregation: mean
+  total_risk:
+    system_weights:
+      cardio: 0.36
+      metabolic: 0.30
+      lifestyle: 0.24
+      recovery: 0.10
+  age_delta:
+    mapping: linear
+    linear:
+      pivot_risk: 50
+      pivot_delta_years: 0
+      slope_years_per_risk_point: 0.25
+    caps:
+      min_years: -8
+      max_years: 15

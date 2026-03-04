@@ -42,3 +42,15 @@ The normalizer computes BMI from height+weight when available, checks sanity ran
 1. Edit `bioage/constants.yaml` (do not hardcode thresholds in Python).
 2. Run `pytest -q` to validate boundary behavior against the updated config.
 3. Re-run `python -m bioage demo --outdir outputs/demo_run/` to regenerate normalized inputs and scores.
+
+
+## Model pipeline
+
+The Task 4 model pipeline is deterministic and config-driven:
+
+- `score_request` computes per-metric risk scores (`bp`, `pwv`, `bmi`, `waist`, `sleep`, `lifestyle`).
+- `run_model` aggregates those into system subscores (`cardio`, `metabolic`, `lifestyle`, `recovery`).
+- Subscores are combined into a weighted total risk score (0–100), with weight renormalization if a full system is unavailable.
+- Total risk is mapped to age delta (years) with configured linear mapping + caps, then converted to biological age.
+
+All model weights, subscore component definitions, and age-delta mapping parameters live in `bioage/constants.yaml` (not hardcoded in Python).

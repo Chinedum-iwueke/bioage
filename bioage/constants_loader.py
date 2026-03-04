@@ -22,6 +22,16 @@ _REQUIRED_PATHS: tuple[tuple[str, ...], ...] = (
     ("thresholds", "caffeine_use"),
     ("weights", "sleep_components"),
     ("weights", "lifestyle_components"),
+    ("model", "subscores", "systems", "cardio", "components"),
+    ("model", "subscores", "systems", "metabolic", "components"),
+    ("model", "subscores", "systems", "lifestyle", "components"),
+    ("model", "subscores", "systems", "recovery", "components"),
+    ("model", "total_risk", "system_weights"),
+    ("model", "age_delta", "linear", "pivot_risk"),
+    ("model", "age_delta", "linear", "pivot_delta_years"),
+    ("model", "age_delta", "linear", "slope_years_per_risk_point"),
+    ("model", "age_delta", "caps", "min_years"),
+    ("model", "age_delta", "caps", "max_years"),
 )
 
 _CACHE: dict[Path, dict[str, Any]] = {}
