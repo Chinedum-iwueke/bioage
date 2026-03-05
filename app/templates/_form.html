@@ -1,0 +1,66 @@
+{% macro help_block(name) -%}
+<details class="field-help">
+  <summary aria-label="{{ helptext[name].label }} info">ⓘ</summary>
+  <div class="help-panel">
+    <p>{{ helptext[name].description }}</p>
+    <p><strong>Units:</strong> {{ helptext[name].unit }}</p>
+    <p><strong>Accepted range:</strong> {{ helptext[name].range_text }}</p>
+    <p><strong>Examples:</strong> {{ helptext[name].examples | join(', ') }}</p>
+  </div>
+</details>
+{%- endmacro %}
+
+<form method="post" action="/calculate" class="card-form">
+  <fieldset>
+    <legend>Client</legend>
+    <label class="field-label">Client Name <span class="req">*</span> {{ help_block('client_name') }}
+      <input type="text" name="client_name" required value="{{ values.client_name }}">
+      {% if field_errors.client_name %}<span class="field-error">{{ field_errors.client_name }}</span>{% endif %}
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Demographics</legend>
+    <label class="field-label">Chronological Age (years) <span class="req">*</span> {{ help_block('chronological_age_years') }}
+      <input type="number" name="chronological_age_years" required value="{{ values.chronological_age_years }}">
+      {% if field_errors.chronological_age_years %}<span class="field-error">{{ field_errors.chronological_age_years }}</span>{% endif %}
+    </label>
+    <label class="field-label">Sex <span class="req">*</span> {{ help_block('sex') }}
+      <select name="sex" required>
+        <option value="male" {% if values.sex == 'male' %}selected{% endif %}>Male</option><option value="female" {% if values.sex == 'female' %}selected{% endif %}>Female</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Cardiovascular</legend>
+    <label class="field-label">Systolic BP (mmHg) <span class="req">*</span> {{ help_block('sbp_mmHg') }}<input type="number" name="sbp_mmHg" required value="{{ values.sbp_mmHg }}">{% if field_errors.sbp_mmHg %}<span class="field-error">{{ field_errors.sbp_mmHg }}</span>{% endif %}</label>
+    <label class="field-label">Diastolic BP (mmHg) <span class="req">*</span> {{ help_block('dbp_mmHg') }}<input type="number" name="dbp_mmHg" required value="{{ values.dbp_mmHg }}">{% if field_errors.dbp_mmHg %}<span class="field-error">{{ field_errors.dbp_mmHg }}</span>{% endif %}</label>
+    <label class="field-label">PWV (m/s, optional) {{ help_block('pwv_m_per_s') }}<input type="number" step="0.1" name="pwv_m_per_s" value="{{ values.pwv_m_per_s }}">{% if field_errors.pwv_m_per_s %}<span class="field-error">{{ field_errors.pwv_m_per_s }}</span>{% endif %}</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Metabolic</legend>
+    <label class="field-label">Height (cm, optional if BMI provided) {{ help_block('height_cm') }}<input type="number" step="0.1" name="height_cm" value="{{ values.height_cm }}">{% if field_errors.height_cm %}<span class="field-error">{{ field_errors.height_cm }}</span>{% endif %}</label>
+    <label class="field-label">Weight (kg, optional if BMI provided) {{ help_block('weight_kg') }}<input type="number" step="0.1" name="weight_kg" value="{{ values.weight_kg }}">{% if field_errors.weight_kg %}<span class="field-error">{{ field_errors.weight_kg }}</span>{% endif %}</label>
+    <label class="field-label">BMI (optional if height/weight provided) {{ help_block('bmi') }}<input type="number" step="0.1" name="bmi" value="{{ values.bmi }}">{% if field_errors.bmi %}<span class="field-error">{{ field_errors.bmi }}</span>{% endif %}</label>
+    <label class="field-label">Waist (cm) <span class="req">*</span> {{ help_block('waist_cm') }}<input type="number" step="0.1" name="waist_cm" required value="{{ values.waist_cm }}">{% if field_errors.waist_cm %}<span class="field-error">{{ field_errors.waist_cm }}</span>{% endif %}</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Lifestyle</legend>
+    <label class="field-label">Smoking <span class="req">*</span> {{ help_block('smoking_status') }}<select name="smoking_status" required><option value="never" {% if values.smoking_status == 'never' %}selected{% endif %}>Never</option><option value="former" {% if values.smoking_status == 'former' %}selected{% endif %}>Former</option><option value="current" {% if values.smoking_status == 'current' %}selected{% endif %}>Current</option></select></label>
+    <label class="field-label">Alcohol <span class="req">*</span> {{ help_block('alcohol_use') }}<select name="alcohol_use" required><option value="none" {% if values.alcohol_use == 'none' %}selected{% endif %}>None</option><option value="light" {% if values.alcohol_use == 'light' %}selected{% endif %}>Light</option><option value="moderate" {% if values.alcohol_use == 'moderate' %}selected{% endif %}>Moderate</option><option value="heavy" {% if values.alcohol_use == 'heavy' %}selected{% endif %}>Heavy</option></select></label>
+    <label class="field-label">Drug use <span class="req">*</span> {{ help_block('drug_use') }}<select name="drug_use" required><option value="none" {% if values.drug_use == 'none' %}selected{% endif %}>None</option><option value="occasional" {% if values.drug_use == 'occasional' %}selected{% endif %}>Occasional</option><option value="regular" {% if values.drug_use == 'regular' %}selected{% endif %}>Regular</option></select></label>
+    <label class="field-label">Caffeine <span class="req">*</span> {{ help_block('caffeine_use') }}<select name="caffeine_use" required><option value="none" {% if values.caffeine_use == 'none' %}selected{% endif %}>None</option><option value="low" {% if values.caffeine_use == 'low' %}selected{% endif %}>Low</option><option value="moderate" {% if values.caffeine_use == 'moderate' %}selected{% endif %}>Moderate</option><option value="high" {% if values.caffeine_use == 'high' %}selected{% endif %}>High</option></select></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sleep</legend>
+    <label class="field-label">Sleep hours/night <span class="req">*</span> {{ help_block('sleep_hours') }}<input type="number" step="0.1" name="sleep_hours" required value="{{ values.sleep_hours }}">{% if field_errors.sleep_hours %}<span class="field-error">{{ field_errors.sleep_hours }}</span>{% endif %}</label>
+    <label class="field-label">Sleep quality <span class="req">*</span> {{ help_block('sleep_quality') }}<select name="sleep_quality" required><option value="poor" {% if values.sleep_quality == 'poor' %}selected{% endif %}>Poor</option><option value="fair" {% if values.sleep_quality == 'fair' %}selected{% endif %}>Fair</option><option value="good" {% if values.sleep_quality == 'good' %}selected{% endif %}>Good</option><option value="excellent" {% if values.sleep_quality == 'excellent' %}selected{% endif %}>Excellent</option></select></label>
+    <label class="field-label">Sleep consistency <span class="req">*</span> {{ help_block('sleep_consistency') }}<select name="sleep_consistency" required><option value="irregular" {% if values.sleep_consistency == 'irregular' %}selected{% endif %}>Irregular</option><option value="somewhat_regular" {% if values.sleep_consistency == 'somewhat_regular' %}selected{% endif %}>Somewhat regular</option><option value="regular" {% if values.sleep_consistency == 'regular' %}selected{% endif %}>Regular</option></select></label>
+  </fieldset>
+  <button type="submit">Calculate Biological Age</button>
+  <p class="disclaimer-subtle">{{ disclaimer }}</p>
+</form>

@@ -3,9 +3,16 @@ body { font-family: Arial, sans-serif; background: #f7f7f7; color: #222; }
 .subtitle { color: #555; }
 fieldset { border: 1px solid #ddd; margin-bottom: 1rem; padding: 1rem; }
 label { display: block; margin-bottom: 0.7rem; }
+.field-label { display: block; }
 input, select { display: block; margin-top: 0.25rem; padding: 0.4rem; width: 100%; max-width: 320px; }
 button, a { margin-right: 0.6rem; }
 .req { color: #a00; }
-.disclaimer { border-left: 4px solid #c77; background: #fff4f4; padding: 0.75rem; margin-bottom: 1rem; }
+.disclaimer-subtle { font-size: 0.82rem; color: #6f6f6f; margin-top: 0.75rem; }
+.field-help { display: inline-block; margin-left: 0.3rem; vertical-align: middle; }
+.field-help summary { list-style: none; display: inline-block; cursor: pointer; color: #4f6278; font-size: 0.85rem; }
+.field-help summary::-webkit-details-marker { display: none; }
+.help-panel { border: 1px solid #e4e7ec; background: #fafbfd; padding: 0.5rem 0.6rem; margin-top: 0.2rem; border-radius: 6px; max-width: 420px; }
+.help-panel p { margin: 0.2rem 0; font-size: 0.86rem; color: #3f4b59; }
+.field-error { display: block; color: #9f1c1c; font-size: 0.82rem; margin-top: 0.25rem; }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .charts img { max-width: 100%; border: 1px solid #ccc; }

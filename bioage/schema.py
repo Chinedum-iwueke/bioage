@@ -58,6 +58,19 @@ class SleepConsistency(str, Enum):
     REGULAR = "regular"
 
 
+FIELD_LIMITS: dict[str, tuple[float, float]] = {
+    "demographics.chronological_age_years": (10, 120),
+    "vitals.sbp_mmHg": (70, 260),
+    "vitals.dbp_mmHg": (40, 160),
+    "vitals.pwv_m_per_s": (3.0, 25.0),
+    "anthropometrics.height_cm": (90, 260),
+    "anthropometrics.weight_kg": (20, 250),
+    "anthropometrics.bmi": (12, 70),
+    "anthropometrics.waist_cm": (20, 200),
+    "sleep.sleep_hours": (0, 16),
+}
+
+
 @dataclass
 class DemographicsInput:
     chronological_age_years: int
@@ -196,19 +209,19 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     sleep_raw = _require_dict(payload.get("sleep"), "sleep")
 
     age = _parse_int(demographics_raw.get("chronological_age_years"), "demographics.chronological_age_years")
-    _check_range(age, "demographics.chronological_age_years", 10, 120)
+    _check_range(age, "demographics.chronological_age_years", *FIELD_LIMITS["demographics.chronological_age_years"])
     sex = _normalize_enum(demographics_raw.get("sex"), Sex, "demographics.sex")
     demographics = DemographicsInput(chronological_age_years=age, sex=sex)
 
     sbp = _parse_int(vitals_raw.get("sbp_mmHg"), "vitals.sbp_mmHg")
     dbp = _parse_int(vitals_raw.get("dbp_mmHg"), "vitals.dbp_mmHg")
-    _check_range(sbp, "vitals.sbp_mmHg", 70, 260)
-    _check_range(dbp, "vitals.dbp_mmHg", 40, 160)
+    _check_range(sbp, "vitals.sbp_mmHg", *FIELD_LIMITS["vitals.sbp_mmHg"])
+    _check_range(dbp, "vitals.dbp_mmHg", *FIELD_LIMITS["vitals.dbp_mmHg"])
     pwv = vitals_raw.get("pwv_m_per_s")
     pwv_parsed = None
     if pwv is not None:
         pwv_parsed = _parse_float(pwv, "vitals.pwv_m_per_s")
-        _check_range(pwv_parsed, "vitals.pwv_m_per_s", 3.0, 25.0)
+        _check_range(pwv_parsed, "vitals.pwv_m_per_s", *FIELD_LIMITS["vitals.pwv_m_per_s"])
     vitals = VitalsInput(sbp_mmHg=sbp, dbp_mmHg=dbp, pwv_m_per_s=pwv_parsed)
 
     height_raw = anthropometrics_raw.get("height_cm")
@@ -219,7 +232,7 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     if waist_raw is None:
         raise SchemaValidationError("anthropometrics.waist_cm is required")
     waist = _parse_float(waist_raw, "anthropometrics.waist_cm")
-    _check_range(waist, "anthropometrics.waist_cm", 20, 200)
+    _check_range(waist, "anthropometrics.waist_cm", *FIELD_LIMITS["anthropometrics.waist_cm"])
 
     height = _parse_float(height_raw, "anthropometrics.height_cm") if height_raw is not None else None
     weight = _parse_float(weight_raw, "anthropometrics.weight_kg") if weight_raw is not None else None
@@ -231,11 +244,11 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
         raise SchemaValidationError("Provide either anthropometrics.bmi or both height_cm and weight_kg")
 
     if height is not None:
-        _check_range(height, "anthropometrics.height_cm", 90, 260)
+        _check_range(height, "anthropometrics.height_cm", *FIELD_LIMITS["anthropometrics.height_cm"])
     if weight is not None:
-        _check_range(weight, "anthropometrics.weight_kg", 20, 250)
+        _check_range(weight, "anthropometrics.weight_kg", *FIELD_LIMITS["anthropometrics.weight_kg"])
     if bmi is not None:
-        _check_range(bmi, "anthropometrics.bmi", 12, 70)
+        _check_range(bmi, "anthropometrics.bmi", *FIELD_LIMITS["anthropometrics.bmi"])
 
     if height is not None and weight is not None:
         computed = round(_computed_bmi(height, weight), 2)
@@ -259,7 +272,7 @@ def normalize_request(raw: dict[str, Any]) -> BioAgeRequest:
     )
 
     sleep_hours = _parse_float(sleep_raw.get("sleep_hours"), "sleep.sleep_hours")
-    _check_range(sleep_hours, "sleep.sleep_hours", 0, 16)
+    _check_range(sleep_hours, "sleep.sleep_hours", *FIELD_LIMITS["sleep.sleep_hours"])
     sleep = SleepInput(
         sleep_hours=sleep_hours,
         sleep_quality=_normalize_enum(sleep_raw.get("sleep_quality"), SleepQuality, "sleep.sleep_quality"),
