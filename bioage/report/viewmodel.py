@@ -86,7 +86,7 @@ def build_report_context(req: BioAgeRequest, result: dict, explanations: dict, c
         "model_version": result.get("model_version", "unknown"),
         "disclaimer": explanations.get("disclaimer_short") or constants.get("copy", {}).get("disclaimer_short", ""),
         "client": {
-            "prepared_for": meta.get("prepared_for") or meta.get("name") or "Client",
+            "prepared_for": meta.get("prepared_for") or meta.get("client_name") or meta.get("name") or "Client",
             "consultant_id": meta.get("consultant_id", "CONSULTANT-PLACEHOLDER"),
             "client_id": meta.get("client_id", "CLIENT-PLACEHOLDER"),
             "security_key": meta.get("security_key", "SECURITY-PLACEHOLDER"),

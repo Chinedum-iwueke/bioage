@@ -2,12 +2,15 @@
 {% block title %}Input Error{% endblock %}
 {% block content %}
 <section>
-  <h2>We couldn't process your request</h2>
+  <h2>Please correct the highlighted fields</h2>
   <p>{{ message }}</p>
-  <p><a href="/">Go back to the form</a></p>
+  {% if field_errors %}
+  <ul>
+    {% for name, err in field_errors.items() %}
+      <li><strong>{{ name }}</strong>: {{ err }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </section>
-<section class="disclaimer">
-  <h3>Disclaimer</h3>
-  <p>{{ disclaimer }}</p>
-</section>
+{% include "_form.html" %}
 {% endblock %}
