@@ -7,14 +7,14 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from bioage.constants_loader import load_constants
 from app.helptext import FIELD_HELP, FIELD_RANGES
+from app.validation import parse_validation_error
 from bioage.pipeline import run_pipeline
 from bioage.schema import SchemaValidationError
 
@@ -68,7 +68,11 @@ def _render_help() -> dict[str, dict[str, str | list[str]]]:
     return rendered
 
 
-def _form_context(values: dict[str, str] | None = None, field_errors: dict[str, str] | None = None) -> dict:
+def _form_context(
+    values: dict[str, str] | None = None,
+    field_errors: dict[str, str] | None = None,
+    error_summary: str | None = None,
+) -> dict:
     base = _default_form_values()
     if values:
         for key, value in values.items():
@@ -77,21 +81,10 @@ def _form_context(values: dict[str, str] | None = None, field_errors: dict[str, 
     return {
         "disclaimer": _disclaimer_text(),
         "helptext": _render_help(),
-        "values": base,
-        "field_errors": field_errors or {},
+        "form_values": base,
+        "form_errors": field_errors or {},
+        "error_summary": error_summary,
     }
-
-
-def _field_error_with_range(message: str) -> tuple[str | None, str]:
-    match = re.search(r"([a-z_]+\.[a-z_]+)", message)
-    if not match:
-        return None, message
-    dotted = match.group(1)
-    form_field = dotted.split(".")[-1]
-    if dotted in FIELD_RANGES:
-        low, high = FIELD_RANGES[dotted]
-        return form_field, f"{message} (expected range {low:g}–{high:g})"
-    return form_field, message
 
 
 def _constants_path() -> Path | None:
@@ -137,95 +130,51 @@ def _new_run_folder() -> tuple[str, Path]:
     return candidate.name, candidate
 
 
-@app.exception_handler(RequestValidationError)
-def handle_request_validation_error(request: Request, exc: RequestValidationError) -> HTMLResponse:
-    message = "Please correct the highlighted fields"
-    field_errors: dict[str, str] = {}
-    for err in exc.errors():
-        loc = err.get("loc", [])
-        if not loc:
-            continue
-        field = str(loc[-1])
-        dotted_map = {
-            "chronological_age_years": "demographics.chronological_age_years",
-            "sbp_mmHg": "vitals.sbp_mmHg",
-            "dbp_mmHg": "vitals.dbp_mmHg",
-            "pwv_m_per_s": "vitals.pwv_m_per_s",
-            "height_cm": "anthropometrics.height_cm",
-            "weight_kg": "anthropometrics.weight_kg",
-            "bmi": "anthropometrics.bmi",
-            "waist_cm": "anthropometrics.waist_cm",
-            "sleep_hours": "sleep.sleep_hours",
-        }
-        dotted = dotted_map.get(field)
-        if dotted and dotted in FIELD_RANGES:
-            low, high = FIELD_RANGES[dotted]
-            field_errors[field] = f"Required or invalid input (expected range {low:g}–{high:g})."
-        else:
-            field_errors[field] = "Required or invalid input."
-    return templates.TemplateResponse(request, "error.html", {**_form_context(field_errors=field_errors), "message": message}, status_code=400)
-
-
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "index.html", _form_context())
 
 
 @app.post("/calculate", response_class=HTMLResponse)
-def calculate(
-    request: Request,
-    client_name: str = Form(...),
-    chronological_age_years: int = Form(...),
-    sex: str = Form(...),
-    sbp_mmHg: int = Form(...),
-    dbp_mmHg: int = Form(...),
-    pwv_m_per_s: str | None = Form(None),
-    height_cm: str | None = Form(None),
-    weight_kg: str | None = Form(None),
-    bmi: str | None = Form(None),
-    waist_cm: float = Form(...),
-    smoking_status: str = Form(...),
-    alcohol_use: str = Form(...),
-    drug_use: str = Form(...),
-    caffeine_use: str = Form(...),
-    sleep_hours: float = Form(...),
-    sleep_quality: str = Form(...),
-    sleep_consistency: str = Form(...),
-) -> HTMLResponse:
+async def calculate(request: Request) -> HTMLResponse:
     def _opt_num(value: str | None, cast):
         if value is None:
             return None
         text = value.strip()
         return cast(text) if text else None
 
+    form_data = await request.form()
+    values = _default_form_values()
+    values.update({key: str(form_data.get(key, "")) for key in values})
+
     try:
         raw_input = {
-            "client_metadata": {"client_name": client_name, "prepared_for": client_name},
+            "client_metadata": {"client_name": values["client_name"], "prepared_for": values["client_name"]},
             "demographics": {
-                "chronological_age_years": chronological_age_years,
-                "sex": sex,
+                "chronological_age_years": _opt_num(values["chronological_age_years"], int),
+                "sex": values["sex"],
             },
             "vitals": {
-                "sbp_mmHg": sbp_mmHg,
-                "dbp_mmHg": dbp_mmHg,
-                "pwv_m_per_s": _opt_num(pwv_m_per_s, float),
+                "sbp_mmHg": _opt_num(values["sbp_mmHg"], int),
+                "dbp_mmHg": _opt_num(values["dbp_mmHg"], int),
+                "pwv_m_per_s": _opt_num(values["pwv_m_per_s"], float),
             },
             "anthropometrics": {
-                "height_cm": _opt_num(height_cm, float),
-                "weight_kg": _opt_num(weight_kg, float),
-                "bmi": _opt_num(bmi, float),
-                "waist_cm": waist_cm,
+                "height_cm": _opt_num(values["height_cm"], float),
+                "weight_kg": _opt_num(values["weight_kg"], float),
+                "bmi": _opt_num(values["bmi"], float),
+                "waist_cm": _opt_num(values["waist_cm"], float),
             },
             "lifestyle": {
-                "smoking_status": smoking_status,
-                "alcohol_use": alcohol_use,
-                "drug_use": drug_use,
-                "caffeine_use": caffeine_use,
+                "smoking_status": values["smoking_status"],
+                "alcohol_use": values["alcohol_use"],
+                "drug_use": values["drug_use"],
+                "caffeine_use": values["caffeine_use"],
             },
             "sleep": {
-                "sleep_hours": sleep_hours,
-                "sleep_quality": sleep_quality,
-                "sleep_consistency": sleep_consistency,
+                "sleep_hours": _opt_num(values["sleep_hours"], float),
+                "sleep_quality": values["sleep_quality"],
+                "sleep_consistency": values["sleep_consistency"],
             },
         }
 
@@ -267,40 +216,13 @@ def calculate(
                 "missing_metrics": missing_metrics,
             },
         )
-    except SchemaValidationError as exc:
-        field_name, err = _field_error_with_range(str(exc))
-        field_errors = {field_name: err} if field_name else {"form": err}
-        values = {
-            "client_name": client_name,
-            "chronological_age_years": str(chronological_age_years),
-            "sex": sex,
-            "sbp_mmHg": str(sbp_mmHg),
-            "dbp_mmHg": str(dbp_mmHg),
-            "pwv_m_per_s": pwv_m_per_s or "",
-            "height_cm": height_cm or "",
-            "weight_kg": weight_kg or "",
-            "bmi": bmi or "",
-            "waist_cm": str(waist_cm),
-            "smoking_status": smoking_status,
-            "alcohol_use": alcohol_use,
-            "drug_use": drug_use,
-            "caffeine_use": caffeine_use,
-            "sleep_hours": str(sleep_hours),
-            "sleep_quality": sleep_quality,
-            "sleep_consistency": sleep_consistency,
-        }
+    except (SchemaValidationError, ValueError) as exc:
+        field_errors, summary = parse_validation_error(exc)
         return templates.TemplateResponse(
             request,
-            "error.html",
-            {**_form_context(values=values, field_errors=field_errors), "message": "Please correct the highlighted fields"},
-            status_code=400,
-        )
-    except ValueError:
-        return templates.TemplateResponse(
-            request,
-            "error.html",
-            {**_form_context(), "message": "Please enter valid numeric values."},
-            status_code=400,
+            "index.html",
+            _form_context(values=values, field_errors=field_errors, error_summary=summary),
+            status_code=200,
         )
     except Exception:
         logger.exception("Unexpected error during calculation")
@@ -308,7 +230,7 @@ def calculate(
             request,
             "error.html",
             {
-                **_form_context(),
+                **_form_context(values=values),
                 "message": "We could not complete your request. Please review your inputs and try again.",
             },
             status_code=500,
