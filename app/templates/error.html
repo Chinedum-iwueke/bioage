@@ -2,15 +2,9 @@
 {% block title %}Input Error{% endblock %}
 {% block content %}
 <section>
-  <h2>Please correct the highlighted fields</h2>
+  <h2>Something went wrong</h2>
   <p>{{ message }}</p>
-  {% if field_errors %}
-  <ul>
-    {% for name, err in field_errors.items() %}
-      <li><strong>{{ name }}</strong>: {{ err }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+  <a href="/">Back to empty form</a>
 </section>
 {% include "_form.html" %}
 {% endblock %}

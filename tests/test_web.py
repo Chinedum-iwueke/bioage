@@ -40,6 +40,7 @@ def test_get_index() -> None:
     assert response.status_code == 200
     assert "Client Name" in response.text
     assert "ⓘ" in response.text
+    assert "/static/js/form.js" in response.text
     disclaimer = "Educational guidance only. These results are not a diagnosis or treatment plan. Discuss personal decisions with a qualified healthcare professional."
     assert response.text.count(disclaimer) == 1
 
@@ -65,10 +66,14 @@ def test_calculate_and_artifacts_routes() -> None:
     assert download_response.status_code == 200
 
 
-def test_missing_client_name_shows_helpful_error() -> None:
+def test_invalid_sbp_preserves_values_and_renders_field_errors() -> None:
     payload = _payload()
-    payload.pop("client_name")
+    payload["sbp_mmHg"] = "999"
+
     response = client.post("/calculate", data=payload)
-    assert response.status_code == 400
+    assert response.status_code == 200
     assert "Please correct the highlighted fields" in response.text
-    assert "client_name" in response.text
+    assert "vitals.sbp_mmHg must be between 70 and 260" in response.text
+    assert 'name="client_name" required value="Ava Smith"' in response.text
+    assert 'name="height_cm" value="178"' in response.text
+    assert "input-error" in response.text
