@@ -2,7 +2,7 @@
 
 The Biological Age Calculator is an educational wellness estimation tool that converts self-reported health and lifestyle inputs into a deterministic **biological age estimate**. It is designed for coaching-style interpretation, not clinical diagnosis. The model combines blood pressure, arterial stiffness (optional PWV), body composition, lifestyle, and sleep indicators into a composite risk score, then maps that score to an age delta relative to chronological age.
 
-Each run produces more than a single number: you get system subscores, top drivers, recommendation lists, and counterfactual simulations ("what could change if key risk factors improved"). The report package includes an HTML report and charts, and will also generate a PDF when a supported backend (WeasyPrint) is available.
+Each run produces more than a single number: you get system subscores, top drivers, recommendation lists, and counterfactual simulations ("what could change if key risk factors improved"). The report package includes an HTML report and charts, and will also generate a PDF. The pipeline prefers WeasyPrint for full-fidelity rendering and falls back to a simplified PDF when WeasyPrint is unavailable.
 
 All scoring thresholds, component weights, and explanatory copy are configuration-driven via `bioage/constants.yaml`. This keeps the pipeline reproducible and transparent for operator handoff. For every run, the system records provenance metadata such as constants hash and model version to support traceability.
 
@@ -129,7 +129,7 @@ Each successful run writes:
 - `report.html`
 - `charts/*.png`
 - `run_meta.json` (includes `constants_hash`, `model_version`, `input_hash`, runtime metadata)
-- `report.pdf` when PDF export is enabled and WeasyPrint is available
+- `report.pdf` when PDF export is enabled (full-fidelity via WeasyPrint when available, otherwise simplified fallback PDF)
 
 ---
 

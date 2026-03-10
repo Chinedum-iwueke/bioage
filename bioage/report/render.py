@@ -90,12 +90,33 @@ def _export_pdf_with_weasyprint(html_path: Path, outdir: Path) -> Path:
     return pdf_path
 
 
+def _export_pdf_with_matplotlib_fallback(html_path: Path, outdir: Path) -> Path:
+    import matplotlib.pyplot as plt
+
+    del html_path
+    pdf_path = outdir / "report.pdf"
+    fig = plt.figure(figsize=(8.27, 11.69))
+    fig.patch.set_facecolor("white")
+    lines = [
+        "Biological Age Report (PDF Fallback)",
+        "",
+        "This environment could not render the styled PDF backend.",
+        "A simplified PDF was generated to preserve download flow.",
+        "Please use report.html for full fidelity formatting.",
+    ]
+    fig.text(0.08, 0.92, "\n".join(lines), va="top", fontsize=12)
+    fig.savefig(pdf_path, format="pdf", bbox_inches="tight")
+    plt.close(fig)
+    return pdf_path
+
+
 def _try_export_pdf(html_path: Path, outdir: Path) -> tuple[Path | None, str]:
     try:
         pdf_path = _export_pdf_with_weasyprint(html_path, outdir)
         return pdf_path, "generated"
     except Exception as exc:  # pragma: no cover - depends on optional backend
-        return None, f"unavailable: {exc}"
+        fallback_pdf = _export_pdf_with_matplotlib_fallback(html_path, outdir)
+        return fallback_pdf, f"fallback_generated: {exc}"
 
 
 def render_report_bundle(run_dir: Path, req: BioAgeRequest, result: dict, explanations: dict, constants: dict, pdf: bool = False) -> dict:

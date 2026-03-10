@@ -58,6 +58,6 @@ def test_report_bundle_pdf_status_is_nonfatal(tmp_path: Path) -> None:
 
     bundle = render_report_bundle(tmp_path, req, result, explanations, constants, pdf=True)
 
-    assert bundle["pdf_status"].startswith("generated") or bundle["pdf_status"].startswith("unavailable")
-    if bundle["report_pdf"] is not None:
-        assert bundle["report_pdf"].exists()
+    assert bundle["pdf_status"].startswith("generated") or bundle["pdf_status"].startswith("fallback_generated")
+    assert bundle["report_pdf"] is not None
+    assert bundle["report_pdf"].exists()
