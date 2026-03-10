@@ -82,16 +82,30 @@ def _render_with_request(req: BioAgeRequest, result: dict, explanations: dict, c
     return report_path
 
 
-def _export_pdf_stub(html_path: Path, outdir: Path) -> Path:
-    raise NotImplementedError(
-        "PDF export is optional and currently disabled. Recommended path: install WeasyPrint and render report.html to report.pdf."
-    )
+def _export_pdf_with_weasyprint(html_path: Path, outdir: Path) -> Path:
+    from weasyprint import HTML
+
+    pdf_path = outdir / "report.pdf"
+    HTML(filename=str(html_path), base_url=str(outdir)).write_pdf(str(pdf_path))
+    return pdf_path
 
 
-def render_report_bundle(run_dir: Path, req: BioAgeRequest, result: dict, explanations: dict, constants: dict) -> dict:
+def _try_export_pdf(html_path: Path, outdir: Path) -> tuple[Path | None, str]:
+    try:
+        pdf_path = _export_pdf_with_weasyprint(html_path, outdir)
+        return pdf_path, "generated"
+    except Exception as exc:  # pragma: no cover - depends on optional backend
+        return None, f"unavailable: {exc}"
+
+
+def render_report_bundle(run_dir: Path, req: BioAgeRequest, result: dict, explanations: dict, constants: dict, pdf: bool = False) -> dict:
     result_with_req = dict(result)
     result_with_req["_request"] = req
     html_path = _render_with_request(req, result_with_req, explanations, constants, run_dir)
     chart_paths = sorted((run_dir / "charts").glob("*.png"))
-    bundle = {"report_html": html_path, "charts": chart_paths, "report_pdf": None}
+    report_pdf = None
+    pdf_status = "disabled"
+    if pdf:
+        report_pdf, pdf_status = _try_export_pdf(html_path, run_dir)
+    bundle = {"report_html": html_path, "charts": chart_paths, "report_pdf": report_pdf, "pdf_status": pdf_status}
     return bundle
