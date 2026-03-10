@@ -39,6 +39,8 @@ def test_get_index() -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "Client Name" in response.text
+    assert "href=\"/\"" in response.text
+    assert "New Calculation" in response.text
     assert "ⓘ" in response.text
     assert "/static/js/form.js" in response.text
     disclaimer = "Educational guidance only. These results are not a diagnosis or treatment plan. Discuss personal decisions with a qualified healthcare professional."
@@ -65,6 +67,14 @@ def test_calculate_and_artifacts_routes() -> None:
     download_response = client.get(f"/runs/{run_id}/download/report.html")
     assert download_response.status_code == 200
 
+    assert "Back to Home" in response.text
+    if "Download PDF Report" in response.text:
+        pdf_response = client.get(f"/runs/{run_id}/download/report.pdf")
+        assert pdf_response.status_code == 200
+    else:
+        pdf_missing_response = client.get(f"/runs/{run_id}/download/report.pdf")
+        assert pdf_missing_response.status_code == 404
+
 
 def test_invalid_sbp_preserves_values_and_renders_field_errors() -> None:
     payload = _payload()
@@ -77,3 +87,14 @@ def test_invalid_sbp_preserves_values_and_renders_field_errors() -> None:
     assert 'name="client_name" required value="Ava Smith"' in response.text
     assert 'name="height_cm" value="178"' in response.text
     assert "input-error" in response.text
+
+
+def test_result_page_avoids_waist_contradiction_when_waist_unreliable() -> None:
+    payload = _payload()
+    payload["waist_cm"] = "50"
+
+    response = client.post("/calculate", data=payload)
+    assert response.status_code == 200
+    assert "Waist seems low; confirm unit is cm (not inches)." in response.text
+    assert "Reduce waist circumference" not in response.text
+    assert "Confirm waist measurement in cm before interpreting this metric" in response.text

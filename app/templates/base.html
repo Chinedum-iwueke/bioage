@@ -8,9 +8,14 @@
 </head>
 <body>
   <main class="container">
-    <header>
-      <h1>Biological Age Calculator</h1>
-      <p class="subtitle">Educational estimate only.</p>
+    <header class="site-header">
+      <div>
+        <h1><a class="site-title-link" href="/">Biological Age Calculator</a></h1>
+        <p class="subtitle">Educational estimate only.</p>
+      </div>
+      <nav class="header-nav" aria-label="Primary">
+        <a href="/?reset=1">New Calculation</a>
+      </nav>
     </header>
     {% block content %}{% endblock %}
   </main>

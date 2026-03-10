@@ -18,3 +18,9 @@ button, a { margin-right: 0.6rem; }
 .field-error { display: block; color: #9f1c1c; font-size: 0.85em; margin-top: 4px; }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
 .charts img { max-width: 100%; border: 1px solid #ccc; }
+
+.site-header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.site-title-link { color: inherit; text-decoration: none; }
+.site-title-link:hover { text-decoration: underline; }
+.header-nav a { font-size: 0.95rem; }
+.actions { margin-top: 1rem; }

@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Any
 
 from bioage.constants_loader import load_constants
+from bioage.guards import GuardFlag
 from bioage.model import run_model
 from bioage.schema import BioAgeRequest, SmokingStatus
 from bioage.scoring import metric_labels
@@ -73,12 +74,35 @@ def _recommendation_for(mapping: dict[str, Any], label: str) -> list[str]:
     return [str(t) for t in tips]
 
 
+_UNTRUSTED_CODES_BY_METRIC: dict[str, set[str]] = {
+    "waist": {"UNIT_SUSPECT_WAIST_IN", "UNIT_SUSPECT_WAIST_HIGH"},
+    "bp": {"BP_SBP_OUTLIER", "BP_DBP_OUTLIER"},
+    "sleep_duration": {"SLEEP_HOURS_OUTLIER"},
+}
+
+
+def _trust_map(req: BioAgeRequest) -> tuple[dict[str, bool], list[dict[str, str]]]:
+    trusted = {"waist": True, "bp": True, "sleep_duration": True}
+    suppressed: list[dict[str, str]] = []
+    flags_by_code = {flag.code: flag for flag in req.guard_flags if isinstance(flag, GuardFlag)}
+
+    for metric, codes in _UNTRUSTED_CODES_BY_METRIC.items():
+        for code in sorted(codes):
+            if code in flags_by_code:
+                trusted[metric] = False
+                suppressed.append({"metric": metric, "reason": code.lower()})
+                break
+
+    return trusted, suppressed
+
+
 def generate_recommendations(req: BioAgeRequest, metric_scores: dict[str, Any], constants: dict[str, Any]) -> dict[str, Any]:
     del metric_scores
     labels = metric_labels(req, constants)
     rec_cfg = constants.get("recommendations", {})
+    trusted, suppressed = _trust_map(req)
 
-    recommendations = {
+    recommendations: dict[str, list[str]] = {
         "bp": _recommendation_for(rec_cfg.get("bp", {}), str(labels["bp"])),
         "waist": _recommendation_for(rec_cfg.get("waist", {}), str(labels["waist"])),
         "bmi": _recommendation_for(rec_cfg.get("bmi", {}), str(labels["bmi"])),
@@ -93,14 +117,28 @@ def generate_recommendations(req: BioAgeRequest, metric_scores: dict[str, Any], 
         ),
     }
 
+    if not trusted["waist"]:
+        recommendations["waist"] = ["Confirm waist measurement in cm before interpreting this metric."]
+    if not trusted["bp"]:
+        recommendations["bp"] = ["Confirm blood pressure values in mmHg before interpreting this metric."]
+
     actions: list[tuple[str, float]] = []
     if str(labels["smoking"]) == "current":
         actions.append(("Quit smoking", 1000.0))
-    actions.append(("Reduce waist circumference", float(req.anthropometrics.waist_cm)))
-    actions.append(("Improve blood pressure control", float(req.vitals.sbp_mmHg + req.vitals.dbp_mmHg)))
+    if trusted["waist"]:
+        actions.append(("Reduce waist circumference", float(req.anthropometrics.waist_cm)))
+    else:
+        actions.append(("Confirm waist measurement in cm before interpreting this metric", 1.0))
+    if trusted["bp"]:
+        actions.append(("Improve blood pressure control", float(req.vitals.sbp_mmHg + req.vitals.dbp_mmHg)))
     priority_actions = [name for name, _ in sorted(actions, key=lambda x: (-x[1], x[0]))][:3]
 
-    return {"recommendations": recommendations, "priority_actions": priority_actions}
+    return {
+        "recommendations": recommendations,
+        "priority_actions": priority_actions,
+        "trusted_for_recommendation": trusted,
+        "suppressed_recommendations": suppressed,
+    }
 
 
 def _rescore(req: BioAgeRequest, constants: dict[str, Any]) -> dict[str, Any]:
