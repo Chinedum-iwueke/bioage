@@ -2,7 +2,7 @@
 
 The Biological Age Calculator is an educational wellness estimation tool that converts self-reported health and lifestyle inputs into a deterministic **biological age estimate**. It is designed for coaching-style interpretation, not clinical diagnosis. The model combines blood pressure, arterial stiffness (optional PWV), body composition, lifestyle, and sleep indicators into a composite risk score, then maps that score to an age delta relative to chronological age.
 
-Each run produces more than a single number: you get system subscores, top drivers, recommendation lists, and counterfactual simulations ("what could change if key risk factors improved"). The report package includes an HTML report and charts so results can be reviewed and shared as a static artifact.
+Each run produces more than a single number: you get system subscores, top drivers, recommendation lists, and counterfactual simulations ("what could change if key risk factors improved"). The report package includes an HTML report and charts, and will also generate a PDF. The pipeline prefers WeasyPrint for full-fidelity rendering and falls back to a simplified PDF when WeasyPrint is unavailable.
 
 All scoring thresholds, component weights, and explanatory copy are configuration-driven via `bioage/constants.yaml`. This keeps the pipeline reproducible and transparent for operator handoff. For every run, the system records provenance metadata such as constants hash and model version to support traceability.
 
@@ -44,7 +44,7 @@ If `--outdir` points to an existing directory, CLI creates `run_YYYYMMDD_HHMMSS`
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/`.
+Open `http://127.0.0.1:8000/`. The header title and "New Calculation" link always return to a clean form (`/` or `/?reset=1`) so users can quickly start another run from results/charts pages.
 
 ### 5) View outputs
 
@@ -129,7 +129,7 @@ Each successful run writes:
 - `report.html`
 - `charts/*.png`
 - `run_meta.json` (includes `constants_hash`, `model_version`, `input_hash`, runtime metadata)
-- `report.pdf` only when a PDF backend is implemented; currently optional and not emitted by default
+- `report.pdf` when PDF export is enabled (full-fidelity via WeasyPrint when available, otherwise simplified fallback PDF)
 
 ---
 
@@ -155,6 +155,7 @@ Versioning/provenance:
 ## Guardrails and reliability
 
 - Unit mismatch heuristics generate warnings (for example, likely inches/lbs entry) but do not silently rewrite values.
+- Recommendations and priority actions are trust-filtered: if a metric is flagged as unreliable (for example suspicious waist units), downstream recommendations for that metric are suppressed and replaced by a neutral "confirm measurement" action.
 - PWV is optional; missing PWV is flagged and handled without breaking run generation.
 - BMI can be derived from height+weight; if a provided BMI conflicts, a warning is added and computed BMI is used.
 - `total_risk` is clamped to `[0,100]`.

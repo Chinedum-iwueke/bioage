@@ -131,7 +131,8 @@ def _new_run_folder() -> tuple[str, Path]:
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request) -> HTMLResponse:
+def index(request: Request, reset: int | None = None) -> HTMLResponse:
+    del reset
     return templates.TemplateResponse(request, "index.html", _form_context())
 
 
@@ -184,7 +185,7 @@ async def calculate(request: Request) -> HTMLResponse:
             outdir=outdir,
             constants_path=_constants_path(),
             assets_path=None,
-            pdf=False,
+            pdf=True,
             command_line=["web"],
         )
 

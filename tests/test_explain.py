@@ -98,3 +98,18 @@ def test_recommendation_mapping_has_all_lifestyle_keys() -> None:
                     assert rec["recommendations"]["alcohol"]
                     assert rec["recommendations"]["drug_use"]
                     assert rec["recommendations"]["caffeine_use"]
+
+
+def test_waist_unit_warning_suppresses_waist_action() -> None:
+    constants = load_constants()
+    payload = _base_payload()
+    payload["anthropometrics"]["waist_cm"] = 50
+    req = normalize_request(payload)
+
+    scored = score_request(req, constants)
+    rec = generate_recommendations(req, scored["metric_scores"], constants)
+
+    assert "Reduce waist circumference" not in rec["priority_actions"]
+    assert rec["trusted_for_recommendation"]["waist"] is False
+    assert any(item["metric"] == "waist" for item in rec["suppressed_recommendations"])
+    assert rec["recommendations"]["waist"] == ["Confirm waist measurement in cm before interpreting this metric."]

@@ -48,3 +48,16 @@ def test_report_generation_has_required_sections(tmp_path: Path) -> None:
     html = (tmp_path / "report.html").read_text(encoding="utf-8")
     for marker in ["Biological Age Report", "Table of Contents", "Disclaimer", "Biological Age", "Blood Pressure"]:
         assert marker in html
+
+
+def test_report_bundle_pdf_status_is_nonfatal(tmp_path: Path) -> None:
+    constants = load_constants()
+    req = normalize_request(_payload())
+    result = run_model(req, constants)
+    explanations = build_explanation_bundle(req, result, constants)
+
+    bundle = render_report_bundle(tmp_path, req, result, explanations, constants, pdf=True)
+
+    assert bundle["pdf_status"].startswith("generated") or bundle["pdf_status"].startswith("fallback_generated")
+    assert bundle["report_pdf"] is not None
+    assert bundle["report_pdf"].exists()

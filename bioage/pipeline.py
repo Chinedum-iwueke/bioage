@@ -72,9 +72,8 @@ def run_pipeline(
     _json_dump(outdir / "result.json", result)
     _json_dump(outdir / "explanations.json", explanations)
 
-    report_bundle = render_report_bundle(outdir, req, result, explanations, constants)
-    if pdf:
-        raise NotImplementedError("--pdf requested but PDF backend is not configured. Recommended: WeasyPrint.")
+    report_bundle = render_report_bundle(outdir, req, result, explanations, constants, pdf=pdf)
+    run_meta["pdf_status"] = report_bundle.get("pdf_status", "disabled")
 
     raw_json_stable = json.dumps(raw_input, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     run_meta.update(

@@ -12,7 +12,7 @@
 </section>
 
 <section>
-  <h3>Top Drivers</h3>
+  <h3>Key Drivers</h3>
   <ol>
     {% for d in drivers %}
       <li>{{ d.metric }} ({{ d.contribution }})</li>
@@ -29,6 +29,13 @@
   </ol>
 </section>
 
+{% if warnings %}
+<section>
+  <h3>Measurement Notes</h3>
+  <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 {% if missing_metrics %}
 <section>
   <h3>Missing Metrics</h3>
@@ -36,20 +43,15 @@
 </section>
 {% endif %}
 
-{% if warnings %}
-<section>
-  <h3>Warnings</h3>
-  <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
-</section>
-{% endif %}
-
 <section class="actions">
-  <a href="/runs/{{ run_id }}/download/report.html">Download Report (HTML)</a>
   <a href="/runs/{{ run_id }}/report">View Report (HTML)</a>
+  <a href="/runs/{{ run_id }}/download/report.html">Download Report (HTML)</a>
   {% if has_pdf %}
-  <a href="/runs/{{ run_id }}/download/report.pdf">Download Report (PDF)</a>
+  <a href="/runs/{{ run_id }}/download/report.pdf">Download PDF Report</a>
   {% endif %}
   <a href="/runs/{{ run_id }}/charts">View Charts</a>
+  <a href="/?reset=1">New Calculation</a>
+  <a href="/">Back to Home</a>
 </section>
 
 <footer><p class="disclaimer-subtle">{{ disclaimer }}</p></footer>
